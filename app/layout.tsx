@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Autobot",
-  description: "Your email and calendar command center",
+  title: {
+    default: "Autobot",
+    template: "%s | Autobot",
+  },
+  description:
+    "A calm, secure command center for your Gmail inbox and Google Calendar.",
 };
 
 export default function RootLayout({
