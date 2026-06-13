@@ -79,7 +79,7 @@ function redirectToDashboard(
   status: "cancelled" | "connected" | "error",
   plugin?: string,
 ) {
-  const url = new URL("/dashboard", getServerEnv().APP_URL);
+  const url = new URL("/dashboard/settings", getServerEnv().APP_URL);
   url.searchParams.set("status", status);
 
   if (plugin) {

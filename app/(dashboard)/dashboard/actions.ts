@@ -20,7 +20,7 @@ export async function connectGoogleIntegrationAction(formData: FormData) {
   });
 
   if (!result.success) {
-    redirect("/dashboard?status=error");
+    redirect("/dashboard/settings?status=error");
   }
 
   let destination: string;
@@ -28,7 +28,7 @@ export async function connectGoogleIntegrationAction(formData: FormData) {
   try {
     destination = await createGoogleIntegrationConnectUrl(result.data.plugin);
   } catch {
-    destination = `/dashboard?integration=${result.data.plugin}&status=error`;
+    destination = `/dashboard/settings?integration=${result.data.plugin}&status=error`;
   }
 
   redirect(destination);
@@ -40,7 +40,7 @@ export async function disconnectGoogleIntegrationAction(formData: FormData) {
   });
 
   if (!result.success) {
-    redirect("/dashboard?status=error");
+    redirect("/dashboard/settings?status=error");
   }
 
   let status = "disconnected";
@@ -52,5 +52,5 @@ export async function disconnectGoogleIntegrationAction(formData: FormData) {
     status = "error";
   }
 
-  redirect(`/dashboard?integration=${result.data.plugin}&status=${status}`);
+  redirect(`/dashboard/settings?integration=${result.data.plugin}&status=${status}`);
 }

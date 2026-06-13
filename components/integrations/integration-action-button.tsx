@@ -16,14 +16,14 @@ export function IntegrationActionButton({
   const { pending } = useFormStatus();
   const className =
     variant === "primary"
-      ? "bg-zinc-950 text-white hover:bg-zinc-800"
-      : "border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50";
+      ? "bg-forest text-white hover:bg-forest-hover"
+      : "bg-surface-soft text-forest hover:bg-gold-soft";
 
   return (
     <button
       type="submit"
       disabled={pending}
-      className={`inline-flex min-w-28 justify-center rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-wait disabled:opacity-60 ${className}`}
+      className={`inline-flex min-h-10 min-w-28 items-center justify-center rounded-xl px-4 text-sm font-semibold transition disabled:cursor-wait disabled:opacity-60 ${className}`}
     >
       {pending ? pendingLabel : children}
     </button>

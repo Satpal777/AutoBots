@@ -4,7 +4,11 @@ import { useState } from "react";
 
 import { authClient } from "@/lib/auth/client";
 
-export function SignOutButton() {
+export function SignOutButton({
+  variant = "default",
+}: {
+  variant?: "default" | "inverse";
+}) {
   const [isPending, setIsPending] = useState(false);
 
   async function signOut() {
@@ -26,7 +30,11 @@ export function SignOutButton() {
       type="button"
       onClick={signOut}
       disabled={isPending}
-      className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+      className={`inline-flex min-h-10 items-center justify-center rounded-xl px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+        variant === "inverse"
+          ? "w-full bg-white/8 text-white/70 hover:bg-white/12 hover:text-white"
+          : "bg-surface-soft text-forest hover:bg-gold-soft"
+      }`}
     >
       {isPending ? "Signing out..." : "Sign out"}
     </button>
