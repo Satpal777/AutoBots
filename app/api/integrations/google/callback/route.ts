@@ -15,6 +15,8 @@ import { corsair } from "@/server/corsair";
 
 export const runtime = "nodejs";
 
+const OAUTH_STATE_MAX_AGE_MS = 10 * 60 * 1000;
+
 const CallbackQuerySchema = z.object({
   code: z.string().min(1),
   state: z.string().min(1),
@@ -30,7 +32,9 @@ export async function GET(request: Request) {
 
   const requestUrl = new URL(request.url);
   const state = requestUrl.searchParams.get("state");
-  const decodedState = state ? decodeOAuthState(state) : null;
+  const decodedState = state
+    ? decodeOAuthState(state, { maxAgeMs: OAUTH_STATE_MAX_AGE_MS })
+    : null;
   const pluginResult = GoogleIntegrationPluginSchema.safeParse(
     decodedState?.plugin,
   );

@@ -91,6 +91,8 @@ export async function disconnectGoogleIntegration(
     keys.set_scope(null),
     keys.set_webhook_signature(null),
   ]);
+
+  await clearIntegrationCache(tenant, plugin);
 }
 
 async function getConnectionStatus(
@@ -106,4 +108,35 @@ async function getConnectionStatus(
   } catch {
     return "error";
   }
+}
+
+async function clearIntegrationCache(
+  tenant: Awaited<ReturnType<typeof getCorsairTenant>>,
+  plugin: GoogleIntegrationPlugin,
+): Promise<void> {
+  const entityClients =
+    plugin === "gmail"
+      ? [
+          tenant.gmail.db.messages,
+          tenant.gmail.db.threads,
+          tenant.gmail.db.drafts,
+          tenant.gmail.db.labels,
+        ]
+      : [tenant.googlecalendar.db.events, tenant.googlecalendar.db.calendars];
+
+  await Promise.all(
+    entityClients.map(async (client) => {
+      while (true) {
+        const entities = await client.list({ limit: 250 });
+
+        if (entities.length === 0) {
+          break;
+        }
+
+        await Promise.all(
+          entities.map((entity) => client.deleteByEntityId(entity.entity_id)),
+        );
+      }
+    }),
+  );
 }

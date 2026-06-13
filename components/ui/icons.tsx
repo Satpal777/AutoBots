@@ -30,6 +30,15 @@ export function ArrowRightIcon(props: IconProps) {
   );
 }
 
+export function ArchiveIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 7h16M6 7v12h12V7M9 11h6" />
+      <path d="M5 3h14l1 4H4z" />
+    </Icon>
+  );
+}
+
 export function CalendarIcon(props: IconProps) {
   return (
     <Icon {...props}>
@@ -64,11 +73,63 @@ export function LockIcon(props: IconProps) {
   );
 }
 
+export function LabelIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20 13 13 20 4 11V4h7z" />
+      <circle cx="8.5" cy="8.5" r="1" />
+    </Icon>
+  );
+}
+
 export function MailIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <rect x="3" y="5" width="18" height="14" rx="3" />
       <path d="m4 7 8 6 8-6" />
+    </Icon>
+  );
+}
+
+export function PencilIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m4 20 4.2-1 10.4-10.4a2.1 2.1 0 0 0-3-3L5.2 16z" />
+      <path d="m13.8 7.4 2.8 2.8" />
+    </Icon>
+  );
+}
+
+export function RefreshIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20 7v5h-5M4 17v-5h5" />
+      <path d="M6.1 9A7 7 0 0 1 18 6l2 2M17.9 15A7 7 0 0 1 6 18l-2-2" />
+    </Icon>
+  );
+}
+
+export function ReplyIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m9 8-5 4 5 4v-3h4c3.5 0 6 1 7 4-.4-5-3-8-7-8H9z" />
+    </Icon>
+  );
+}
+
+export function SearchIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="11" cy="11" r="6" />
+      <path d="m16 16 4 4" />
+    </Icon>
+  );
+}
+
+export function SendIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m21 3-7.5 18-3.2-7.3L3 10.5zM10.3 13.7 21 3" />
     </Icon>
   );
 }
