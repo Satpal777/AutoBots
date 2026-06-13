@@ -1,8 +1,10 @@
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { requireSession } from "@/lib/auth/session";
+import { ensureCorsairTenant } from "@/server/corsair-tenant";
 
 export default async function DashboardPage() {
   const session = await requireSession();
+  await ensureCorsairTenant();
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-12">

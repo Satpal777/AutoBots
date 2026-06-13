@@ -12,17 +12,21 @@ const ServerEnvSchema = z.object({
       (value) => ["postgres:", "postgresql:"].includes(new URL(value).protocol),
       "Must be a PostgreSQL URL",
     ),
-  APP_URL: z.string().url().optional(),
+  APP_URL: z.string().url(),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url(),
   GOOGLE_AUTH_CLIENT_ID: z.string().min(1),
   GOOGLE_AUTH_CLIENT_SECRET: z.string().min(1),
-  GOOGLE_INTEGRATION_CLIENT_ID: z.string().min(1).optional(),
-  GOOGLE_INTEGRATION_CLIENT_SECRET: z.string().min(1).optional(),
+  GOOGLE_INTEGRATION_CLIENT_ID: z.string().min(1),
+  GOOGLE_INTEGRATION_CLIENT_SECRET: z.string().min(1),
   CORSAIR_KEK: z
     .string()
-    .regex(/^[a-fA-F0-9]{64}$/, "Must be 32 bytes encoded as hexadecimal")
-    .optional(),
+    .refine(
+      (value) =>
+        /^[a-fA-F0-9]{64}$/.test(value) ||
+        /^[A-Za-z0-9+/_-]{43}=?$/.test(value),
+      "Must be 32 bytes encoded as hexadecimal or Base64",
+    ),
   INNGEST_EVENT_KEY: z.string().min(1).optional(),
   INNGEST_SIGNING_KEY: z.string().min(1).optional(),
   AI_PROVIDER_API_KEY: z.string().min(1).optional(),
@@ -35,7 +39,10 @@ let cachedEnv: ServerEnv | undefined;
 export function parseServerEnv(
   input: Record<string, string | undefined>,
 ): ServerEnv {
-  const result = ServerEnvSchema.safeParse(input);
+  const result = ServerEnvSchema.safeParse({
+    ...input,
+    APP_URL: input.APP_URL ?? input.BETTER_AUTH_URL,
+  });
 
   if (!result.success) {
     const invalidVariables = [

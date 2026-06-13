@@ -9,14 +9,19 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:migrate": "tsx scripts/migrate-db.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:verify-corsair": "tsx scripts/verify-corsair-db.ts",
+    "corsair:setup": "node --conditions=react-server --import tsx scripts/setup-corsair.ts"
   },
   "packageManager": "pnpm@10.33.2",
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.14",
+    "@corsair-dev/gmail": "^0.1.3",
+    "@corsair-dev/googlecalendar": "^0.1.2",
     "@next/env": "^16.2.9",
     "better-auth": "^1.6.14",
+    "corsair": "^0.1.74",
     "drizzle-orm": "^0.45.2",
     "next": "16.2.9",
     "pg": "^8.21.0",
@@ -26,6 +31,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@corsair-dev/cli": "^0.1.19",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
@@ -35,6 +41,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }
