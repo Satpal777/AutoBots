@@ -1,6 +1,5 @@
 import "server-only";
 
-import { setupCorsair } from "corsair";
 import { and, eq, inArray } from "drizzle-orm";
 
 import { getCorsairTenantId } from "@/lib/auth/session";
@@ -10,7 +9,7 @@ import {
   corsairIntegrations,
 } from "@/lib/db/schema/corsair";
 
-import { corsair } from "./corsair";
+import { corsair, setupConfiguredCorsair } from "./corsair";
 
 const corsairPluginIds = ["gmail", "googlecalendar"] as const;
 
@@ -42,14 +41,14 @@ export async function ensureCorsairTenant() {
 
   if (configuredPluginCount < corsairPluginIds.length) {
     try {
-      await setupCorsair(corsair, { tenantId });
+      await setupConfiguredCorsair({ tenantId });
     } catch (error) {
       // A concurrent first request may provision the same tenant first.
       if (!isUniqueViolation(error)) {
         throw error;
       }
 
-      await setupCorsair(corsair, { tenantId });
+      await setupConfiguredCorsair({ tenantId });
     }
   }
 

@@ -1,6 +1,10 @@
 import { gmail } from "@corsair-dev/gmail";
 import { googlecalendar } from "@corsair-dev/googlecalendar";
-import { createCorsair } from "corsair";
+import {
+  createCorsair,
+  setupCorsair,
+  type SetupCorsairOptions,
+} from "corsair";
 
 import { getPool } from "@/lib/db/pool";
 import { getServerEnv } from "@/lib/env/server";
@@ -38,3 +42,7 @@ export const corsair = createCorsair({
     }),
   ],
 });
+
+export function setupConfiguredCorsair(options?: SetupCorsairOptions) {
+  return setupCorsair(corsair, options);
+}
