@@ -7,10 +7,12 @@ import {
   CalendarEventView,
   CalendarNotice,
 } from "@/components/calendar/calendar-ui";
+import { MeetingPreparationPanel } from "@/components/dashboard/briefing-panels";
 import { PageHeader } from "@/components/dashboard/workspace-panels";
 import { PencilIcon } from "@/components/ui/icons";
 import { getCalendarEvent } from "@/server/calendar";
 import { getGoogleIntegrationStatuses } from "@/server/google-integrations";
+import { getMeetingPreparation } from "@/server/meeting-preparation";
 
 type CalendarEventPageProps = {
   params: Promise<{ eventId: string }>;
@@ -57,6 +59,7 @@ export default async function CalendarEventPage({
   if (!event) {
     notFound();
   }
+  const preparation = await getMeetingPreparation(event);
 
   return (
     <>
@@ -88,6 +91,7 @@ export default async function CalendarEventPage({
       />
       <CalendarNotice status={getStringParam(queryParams.status)} />
       <CalendarEventView event={event} />
+      {preparation ? <MeetingPreparationPanel preparation={preparation} /> : null}
     </>
   );
 }

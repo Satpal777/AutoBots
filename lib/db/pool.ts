@@ -22,6 +22,21 @@ export function getPool(): Pool {
 
   pool = new Pool({
     connectionString: env.DATABASE_URL,
+    // Hosted Postgres providers may close idle pooled sockets. Recycle
+    // connections and enable TCP keepalive so auth reads do not inherit them.
+    max: env.NODE_ENV === "production" ? 10 : 5,
+    connectionTimeoutMillis: 10_000,
+    idleTimeoutMillis: 30_000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
+    maxLifetimeSeconds: 300,
+  });
+
+  pool.on("error", (error) => {
+    console.error("Unexpected idle PostgreSQL client error", {
+      name: error.name,
+      code: "code" in error ? error.code : undefined,
+    });
   });
 
   if (env.NODE_ENV !== "production") {

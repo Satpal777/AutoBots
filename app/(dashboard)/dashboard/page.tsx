@@ -1,17 +1,21 @@
 import {
   CalendarPanel,
-  DayRoutePanel,
   InboxPanel,
   PageHeader,
 } from "@/components/dashboard/workspace-panels";
+import { DailyBriefingPanel } from "@/components/dashboard/briefing-panels";
 import { requireSession } from "@/lib/auth/session";
+import { getDailyBriefing } from "@/server/daily-briefing";
 import { getGoogleIntegrationStatuses } from "@/server/google-integrations";
 import { getWorkspacePreview } from "@/server/workspace-preview";
 
 export default async function TodayPage() {
   const session = await requireSession();
   const statuses = await getGoogleIntegrationStatuses();
-  const preview = await getWorkspacePreview(statuses);
+  const [preview, briefing] = await Promise.all([
+    getWorkspacePreview(statuses),
+    getDailyBriefing(statuses),
+  ]);
   const firstName = session.user.name?.split(" ")[0] || "there";
 
   return (
@@ -22,10 +26,7 @@ export default async function TodayPage() {
         description="Start with the messages and events that need your attention."
       />
 
-      <DayRoutePanel
-        unreadCount={preview.gmail.unreadCount}
-        eventCount={preview.calendar.events.length}
-      />
+      <DailyBriefingPanel briefing={briefing} />
 
       <section className="mt-12">
         <div className="mb-6 flex items-end gap-4">
