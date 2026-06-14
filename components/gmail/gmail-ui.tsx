@@ -51,6 +51,7 @@ export function GmailSectionNav({ active }: { active: "inbox" | "drafts" }) {
 export function GmailNotice({ status }: { status?: string }) {
   const messages: Record<string, string> = {
     archived: "Conversation archived.",
+    analyzed: "Workspace intelligence updated. Search now includes priority and follow-up signals.",
     error: "Gmail could not complete that action. Please try again.",
     invalid: "Check the message fields and try again.",
     labeled: "Label added.",

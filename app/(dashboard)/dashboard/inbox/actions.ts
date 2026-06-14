@@ -13,6 +13,19 @@ import {
   sendGmailMessage,
   setGmailThreadUnread,
 } from "@/server/gmail";
+import { requireSession } from "@/lib/auth/session";
+import { analyzeCachedInbox } from "@/server/intelligence";
+
+export async function analyzeInboxAction() {
+  const session = await requireSession();
+  try {
+    await analyzeCachedInbox(session.user.id);
+    revalidatePath("/dashboard/search");
+  } catch {
+    redirect("/dashboard/inbox?status=error");
+  }
+  redirect("/dashboard/inbox?status=analyzed");
+}
 
 const GmailIdSchema = z
   .string()

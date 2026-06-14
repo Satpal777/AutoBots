@@ -1,7 +1,7 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { chatConversations, chatMessages } from "@/lib/db/schema";
 
@@ -26,17 +26,20 @@ export async function requireConversation(userId: string, conversationId: string
 
 export async function getConversationMessages(userId: string, conversationId: string) {
   await requireConversation(userId, conversationId);
-  return getDb().select().from(chatMessages).where(and(
+  const messages = await getDb().select().from(chatMessages).where(and(
     eq(chatMessages.conversationId, conversationId), eq(chatMessages.userId, userId),
-  )).orderBy(asc(chatMessages.createdAt)).limit(100);
+  )).orderBy(desc(chatMessages.createdAt)).limit(100);
+  return messages.reverse();
 }
 
 export async function addChatMessage(userId: string, conversationId: string, role: "user" | "assistant", content: string, metadata = {}) {
-  await requireConversation(userId, conversationId);
+  const conversation = await requireConversation(userId, conversationId);
   await getDb().insert(chatMessages).values({ id: randomUUID(), userId, conversationId, role, content, metadata });
   await getDb().update(chatConversations).set({
     updatedAt: new Date(),
-    ...(role === "user" ? { title: content.trim().slice(0, 60) || "New conversation" } : {}),
+    ...(role === "user" && conversation.title === "New conversation"
+      ? { title: content.trim().slice(0, 60) || "New conversation" }
+      : {}),
   }).where(and(eq(chatConversations.id, conversationId), eq(chatConversations.userId, userId)));
 }
 

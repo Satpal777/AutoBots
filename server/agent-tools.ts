@@ -3,6 +3,7 @@ import "server-only";
 import { tool } from "ai";
 import { z } from "zod";
 import { agentCorsair } from "@/server/agent-corsair";
+import { searchWorkspace } from "@/server/intelligence";
 
 const EmailAddress = z.string().email();
 
@@ -10,6 +11,11 @@ export function buildAgentTools(userId: string, conversationContext: string) {
   const tenant = agentCorsair.withTenant(userId);
 
   const allTools = {
+    workspace_search: tool({
+      description: "Search the user's tenant-scoped local Gmail and Calendar cache by topic or meaning.",
+      inputSchema: z.object({ query: z.string().trim().min(2).max(300), maxResults: z.number().int().min(1).max(10).default(5) }),
+      execute: async ({ query, maxResults }) => safelyExecute(() => searchWorkspace(userId, query, maxResults)),
+    }),
     gmail_list_messages: tool({
       description: "Find recent Gmail messages as metadata and snippets.",
       inputSchema: z.object({
@@ -57,6 +63,40 @@ export function buildAgentTools(userId: string, conversationContext: string) {
           raw: buildRawEmail({ to, subject, body }),
           ...(threadId ? { threadId } : {}),
         }),
+      ),
+    }),
+    gmail_get_thread: tool({
+      description: "Read a Gmail thread when the user asks for its full context.",
+      inputSchema: z.object({ threadId: z.string().min(1).max(200) }),
+      execute: async ({ threadId }) => safelyExecute(async () => {
+        const result = await tenant.gmail.api.threads.get({ id: threadId, format: "full" });
+        return (result.messages ?? []).slice(-10).map((message) => ({
+          id: message.id,
+          threadId: message.threadId,
+          from: getHeader(message.payload?.headers, "From"),
+          to: getHeader(message.payload?.headers, "To"),
+          subject: getHeader(message.payload?.headers, "Subject"),
+          snippet: message.snippet,
+          internalDate: message.internalDate,
+        }));
+      }),
+    }),
+    gmail_create_draft: tool({
+      description: "Request approval to save an email draft without sending it.",
+      inputSchema: z.object({
+        to: EmailAddress,
+        subject: z.string().trim().max(998).default(""),
+        body: z.string().trim().min(1).max(50_000),
+      }),
+      execute: async ({ to, subject, body }) => safelyExecute(() =>
+        tenant.gmail.api.drafts.create({ draft: { message: { raw: buildRawEmail({ to, subject, body }) } } }),
+      ),
+    }),
+    gmail_archive_thread: tool({
+      description: "Request approval to archive a Gmail thread.",
+      inputSchema: z.object({ threadId: z.string().min(1).max(200) }),
+      execute: async ({ threadId }) => safelyExecute(() =>
+        tenant.gmail.api.threads.modify({ id: threadId, removeLabelIds: ["INBOX"] }),
       ),
     }),
     calendar_list_events: tool({
@@ -117,6 +157,64 @@ export function buildAgentTools(userId: string, conversationContext: string) {
         }),
       ),
     }),
+    calendar_find_availability: tool({
+      description: "Check busy windows for the user and optional attendees.",
+      inputSchema: z.object({
+        timeMin: z.string().datetime({ offset: true }),
+        timeMax: z.string().datetime({ offset: true }),
+        timeZone: z.string().min(1).max(100),
+        attendees: z.array(EmailAddress).max(20).default([]),
+      }),
+      execute: async ({ timeMin, timeMax, timeZone, attendees }) => safelyExecute(() =>
+        tenant.googlecalendar.api.calendar.getAvailability({
+          timeMin, timeMax, timeZone,
+          items: ["primary", ...attendees].map((id) => ({ id })),
+        }),
+      ),
+    }),
+    calendar_update_event: tool({
+      description: "Request approval to update a calendar event using complete replacement details.",
+      inputSchema: z.object({
+        eventId: z.string().min(1).max(300),
+        summary: z.string().trim().min(1).max(500),
+        start: z.string().datetime({ offset: true }),
+        end: z.string().datetime({ offset: true }),
+        timeZone: z.string().min(1).max(100),
+        description: z.string().max(10_000).optional(),
+        location: z.string().max(1_000).optional(),
+        attendees: z.array(EmailAddress).max(50).optional(),
+      }),
+      execute: async ({ eventId, summary, start, end, timeZone, description, location, attendees }) => safelyExecute(async () => {
+        const existing = await tenant.googlecalendar.api.events.get({
+          calendarId: "primary",
+          id: eventId,
+        });
+        const mergedAttendees = attendees === undefined
+          ? existing.attendees
+          : attendees.map((email) => ({ email }));
+
+        return tenant.googlecalendar.api.events.update({
+          calendarId: "primary",
+          id: eventId,
+          sendUpdates: mergedAttendees?.length ? "all" : "none",
+          conferenceDataVersion: 1,
+          supportsAttachments: true,
+          event: {
+            ...existing,
+            summary,
+            start: { dateTime: start, timeZone },
+            end: { dateTime: end, timeZone },
+            ...(description !== undefined
+              ? { description }
+              : existing.description !== undefined ? { description: existing.description } : {}),
+            ...(location !== undefined
+              ? { location }
+              : existing.location !== undefined ? { location: existing.location } : {}),
+            ...(mergedAttendees !== undefined ? { attendees: mergedAttendees } : {}),
+          },
+        });
+      }),
+    }),
   };
 
   const selected = selectAgentToolNames(conversationContext);
@@ -126,10 +224,16 @@ export function buildAgentTools(userId: string, conversationContext: string) {
 }
 
 type AgentToolName =
+  | "workspace_search"
   | "gmail_list_messages"
   | "gmail_send_message"
+  | "gmail_get_thread"
+  | "gmail_create_draft"
+  | "gmail_archive_thread"
   | "calendar_list_events"
-  | "calendar_create_event";
+  | "calendar_create_event"
+  | "calendar_find_availability"
+  | "calendar_update_event";
 
 function selectAgentToolNames(context: string): AgentToolName[] {
   const text = context.toLowerCase();
@@ -143,9 +247,15 @@ function selectAgentToolNames(context: string): AgentToolName[] {
   const selected = new Set<AgentToolName>();
 
   if (gmailRead) selected.add("gmail_list_messages");
+  if (gmailRead && /\b(thread|full|entire|details|context|conversation)\b/.test(text)) selected.add("gmail_get_thread");
   if (calendarRead) selected.add("calendar_list_events");
-  if (gmailWrite) selected.add("gmail_send_message");
-  if (calendarWrite) selected.add("calendar_create_event");
+  if (gmailWrite && !/\bdraft\b/.test(text)) selected.add("gmail_send_message");
+  if (gmailWrite && /\bdraft\b/.test(text)) selected.add("gmail_create_draft");
+  if (gmailDomain && /\barchive\b/.test(text)) selected.add("gmail_archive_thread");
+  if (calendarWrite && !/\b(move|reschedule|update|change)\b/.test(text)) selected.add("calendar_create_event");
+  if (calendarWrite && /\b(move|reschedule|update|change)\b/.test(text)) selected.add("calendar_update_event");
+  if (calendarDomain && /\b(availability|available|free time|free slot)\b/.test(text)) selected.add("calendar_find_availability");
+  if (/\b(find|search|remember|discuss|topic|about)\b/.test(text)) selected.add("workspace_search");
 
   if (selected.size === 0) {
     selected.add("gmail_list_messages");

@@ -109,8 +109,8 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid oklch(0.69 0.105 78 / 0.65);
-  outline-offset: 3px;
+  outline: 2px solid var(--forest);
+  outline-offset: 2px;
 }
 
 .paper-field {
@@ -621,9 +621,16 @@ body {
     box-shadow 160ms ease-out;
 }
 
-.product-input:focus {
+.product-input:focus,
+.product-input:focus-visible,
+.product-input:focus-within {
   border-color: var(--forest);
   box-shadow: 0 0 0 3px oklch(0.35 0.076 151 / 0.12);
+  outline: none;
+}
+
+.product-input :focus,
+.product-input :focus-visible {
   outline: none;
 }
 

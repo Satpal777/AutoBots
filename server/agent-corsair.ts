@@ -27,6 +27,7 @@ export const agentCorsair = createCorsair({
           "messages.send": "require_approval",
           "messages.delete": "deny",
           "threads.delete": "deny",
+          "threads.modify": "require_approval",
           "drafts.create": "require_approval",
           "drafts.update": "require_approval",
           "drafts.send": "require_approval",

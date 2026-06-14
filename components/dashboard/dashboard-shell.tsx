@@ -6,10 +6,12 @@ import { usePathname } from "next/navigation";
 import { AutobotLogo } from "@/components/brand/autobot-logo";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { CommandPalette } from "@/components/dashboard/command-palette";
 import {
   CalendarIcon,
   CommandIcon,
   MailIcon,
+  SearchIcon,
   SettingsIcon,
   SparklesIcon,
 } from "@/components/ui/icons";
@@ -19,6 +21,7 @@ const navigation = [
   { href: "/dashboard", label: "Today", icon: CommandIcon },
   { href: "/dashboard/inbox", label: "Inbox", icon: MailIcon },
   { href: "/dashboard/calendar", label: "Calendar", icon: CalendarIcon },
+  { href: "/dashboard/search", label: "Search", icon: SearchIcon },
   { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
@@ -93,6 +96,7 @@ export function DashboardShell({
           {children}
         </div>
       </main>
+      <CommandPalette />
     </div>
   );
 }

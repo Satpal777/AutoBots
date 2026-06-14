@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { z } from "zod";
 
-import { refreshGmailInboxAction } from "./actions";
+import { analyzeInboxAction, refreshGmailInboxAction } from "./actions";
 import {
   GmailDisconnectedState,
   GmailNotice,
@@ -14,6 +14,7 @@ import {
   PencilIcon,
   RefreshIcon,
   SearchIcon,
+  SparklesIcon,
 } from "@/components/ui/icons";
 import { getGmailInbox, type GmailMailboxThread } from "@/server/gmail";
 import { getGoogleIntegrationStatuses } from "@/server/google-integrations";
@@ -108,6 +109,12 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
             <GmailSubmitButton pendingLabel="Refreshing..." variant="quiet">
               <RefreshIcon className="size-4" />
               Refresh
+            </GmailSubmitButton>
+          </form>
+          <form action={analyzeInboxAction}>
+            <GmailSubmitButton pendingLabel="Analyzing..." variant="quiet">
+              <SparklesIcon className="size-4" />
+              Analyze workspace
             </GmailSubmitButton>
           </form>
         </div>

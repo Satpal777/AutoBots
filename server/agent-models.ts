@@ -2,7 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { createOpenAI } from "@ai-sdk/openai";
-import { and, count, eq, inArray, sql } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { aiUsage, plans, userEntitlements } from "@/lib/db/schema";
 import { getServerEnv } from "@/lib/env/server";
@@ -18,10 +18,14 @@ export async function ensureDefaultPlans() {
 
 export async function getPlanStatus(userId: string) {
   await ensureDefaultPlans();
+  const now = new Date();
   const entitlement = await getDb().select({
     id: plans.id, name: plans.name, limit: plans.dailyPremiumMessages,
   }).from(userEntitlements).innerJoin(plans, eq(userEntitlements.planId, plans.id))
-    .where(and(eq(userEntitlements.userId, userId))).limit(1);
+    .where(and(
+      eq(userEntitlements.userId, userId),
+      or(isNull(userEntitlements.expiresAt), gt(userEntitlements.expiresAt, now)),
+    )).limit(1);
   const plan = entitlement[0] ?? (await getDb().select({
     id: plans.id, name: plans.name, limit: plans.dailyPremiumMessages,
   }).from(plans).where(eq(plans.id, "silver")).limit(1))[0];
@@ -78,12 +82,15 @@ export async function reserveUsage(input: {
   await getDb().transaction(async (tx) => {
     if (input.mode === "premium") {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`${input.userId}:${usageDate}`}))`);
+      const now = new Date();
       const plan = await tx.select({ limit: plans.dailyPremiumMessages }).from(plans)
-        .leftJoin(userEntitlements, and(eq(userEntitlements.planId, plans.id), eq(userEntitlements.userId, input.userId)))
         .where(eq(plans.id, "silver")).limit(1);
       const entitled = await tx.select({ limit: plans.dailyPremiumMessages }).from(userEntitlements)
         .innerJoin(plans, eq(userEntitlements.planId, plans.id))
-        .where(eq(userEntitlements.userId, input.userId)).limit(1);
+        .where(and(
+          eq(userEntitlements.userId, input.userId),
+          or(isNull(userEntitlements.expiresAt), gt(userEntitlements.expiresAt, now)),
+        )).limit(1);
       const limit = entitled[0]?.limit ?? plan[0]?.limit ?? 5;
       const used = await tx.select({ value: count() }).from(aiUsage).where(and(
         eq(aiUsage.userId, input.userId), eq(aiUsage.usageDate, usageDate), eq(aiUsage.mode, "premium"),
