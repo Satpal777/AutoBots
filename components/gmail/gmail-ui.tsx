@@ -234,26 +234,51 @@ export function GmailThreadView({
           {thread.messages.map((message, index) => (
             <article
               key={message.id}
-              className="gmail-timeline-item"
+              className={`gmail-timeline-item ${
+                message.sent
+                  ? "gmail-timeline-item-sent"
+                  : "gmail-timeline-item-received"
+              }`}
               style={{ "--thread-index": index } as React.CSSProperties}
             >
-              <div className="gmail-timeline-marker" aria-hidden="true">
-                {getSenderInitials(message.from)}
+              <div
+                className={`gmail-timeline-marker ${
+                  message.sent ? "gmail-timeline-marker-sent" : ""
+                }`}
+                aria-hidden="true"
+              >
+                {message.sent ? (
+                  <SendIcon className="size-3.5" />
+                ) : (
+                  getSenderInitials(message.from)
+                )}
               </div>
-              <div className="gmail-message">
+              <div
+                className={`gmail-message ${
+                  message.sent ? "gmail-message-sent" : "gmail-message-received"
+                }`}
+              >
                 <header className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                       <p className="truncate text-sm font-semibold text-ink">
-                        {getSenderName(message.from)}
+                        {message.sent ? "You" : getSenderName(message.from)}
                       </p>
+                      <span
+                        className={`rounded-md px-1.5 py-0.5 text-[0.68rem] font-semibold ${
+                          message.sent
+                            ? "bg-success-soft text-success"
+                            : "bg-surface-soft text-muted"
+                        }`}
+                      >
+                        {message.sent ? "Sent" : "Received"}
+                      </span>
                       {message.unread ? <span className="size-1.5 shrink-0 rounded-full bg-gold" title="Unread" /> : null}
                     </div>
                     <p className="mt-1 truncate text-xs text-muted">
-                      {message.from ?? "Sender unavailable"}
-                    </p>
-                    <p className="mt-0.5 truncate text-xs text-muted">
-                      To {message.to ?? "recipient unavailable"}
+                      {message.sent
+                        ? `To ${message.to ?? "recipient unavailable"}`
+                        : `From ${message.from ?? "sender unavailable"}`}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">

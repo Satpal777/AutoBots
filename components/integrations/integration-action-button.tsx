@@ -5,12 +5,14 @@ import { useFormStatus } from "react-dom";
 type IntegrationActionButtonProps = {
   children: React.ReactNode;
   pendingLabel: string;
+  title?: string;
   variant?: "primary" | "secondary";
 };
 
 export function IntegrationActionButton({
   children,
   pendingLabel,
+  title,
   variant = "primary",
 }: IntegrationActionButtonProps) {
   const { pending } = useFormStatus();
@@ -22,6 +24,7 @@ export function IntegrationActionButton({
   return (
     <button
       type="submit"
+      title={title}
       disabled={pending}
       className={`inline-flex min-w-28 items-center justify-center px-4 disabled:cursor-wait disabled:opacity-60 ${className}`}
     >

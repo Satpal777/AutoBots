@@ -11,7 +11,7 @@ import {
 
 import { corsair, setupConfiguredCorsair } from "./corsair";
 
-const corsairPluginIds = ["gmail", "googlecalendar"] as const;
+const corsairPluginIds = ["gmail", "googlecalendar", "spotify"] as const;
 
 export async function getCorsairTenant() {
   const tenantId = await getCorsairTenantId();

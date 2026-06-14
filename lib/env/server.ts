@@ -19,6 +19,8 @@ const ServerEnvSchema = z.object({
   GOOGLE_AUTH_CLIENT_SECRET: z.string().min(1),
   GOOGLE_INTEGRATION_CLIENT_ID: z.string().min(1),
   GOOGLE_INTEGRATION_CLIENT_SECRET: z.string().min(1),
+  SPOTIFY_CLIENT_ID: z.string().min(1).optional(),
+  SPOTIFY_CLIENT_SECRET: z.string().min(1).optional(),
   CORSAIR_KEK: z
     .string()
     .refine(

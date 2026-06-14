@@ -1,5 +1,6 @@
 import { gmail } from "@corsair-dev/gmail";
 import { googlecalendar } from "@corsair-dev/googlecalendar";
+import { spotify } from "@corsair-dev/spotify";
 import {
   createCorsair,
   setupCorsair,
@@ -40,9 +41,38 @@ export const corsair = createCorsair({
         },
       },
     }),
+    spotify({
+      authType: "oauth_2",
+      permissions: {
+        mode: "cautious",
+        overrides: {
+          "playlists.removeItem": "deny",
+        },
+      },
+    }),
   ],
 });
 
 export function setupConfiguredCorsair(options?: SetupCorsairOptions) {
-  return setupCorsair(corsair, options);
+  const credentials = {
+    gmail: {
+      client_id: env.GOOGLE_INTEGRATION_CLIENT_ID,
+      client_secret: env.GOOGLE_INTEGRATION_CLIENT_SECRET,
+    },
+    googlecalendar: {
+      client_id: env.GOOGLE_INTEGRATION_CLIENT_ID,
+      client_secret: env.GOOGLE_INTEGRATION_CLIENT_SECRET,
+    },
+    ...(env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET
+      ? {
+          spotify: {
+            client_id: env.SPOTIFY_CLIENT_ID,
+            client_secret: env.SPOTIFY_CLIENT_SECRET,
+          },
+        }
+      : {}),
+    ...options?.credentials,
+  };
+
+  return setupCorsair(corsair, { ...options, credentials });
 }

@@ -11,6 +11,7 @@ import { analyzeNewGmailEntities, getEntityIntelligenceMap, getUserThreadIntelli
 import { getCorsairTenant } from "./corsair-tenant";
 
 const INBOX_LABEL = "INBOX";
+const SENT_LABEL = "SENT";
 const UNREAD_LABEL = "UNREAD";
 const GMAIL_PAGE_SIZE = 30;
 const GMAIL_CACHE_BATCH_SIZE = 90;
@@ -44,6 +45,7 @@ export type GmailMessageDetail = {
   subject: string | null;
   body: string | null;
   receivedAt: string | null;
+  sent: boolean;
   unread: boolean;
 };
 
@@ -580,6 +582,7 @@ function toMessageDetail(message: CachedGmailMessage): GmailMessageDetail {
     subject: message.data.subject?.trim() || null,
     body: normalizeBody(message.data.body),
     receivedAt: formatInternalDate(message.data.internalDate),
+    sent: message.data.labelIds?.includes(SENT_LABEL) ?? false,
     unread: message.data.labelIds?.includes(UNREAD_LABEL) ?? false,
   };
 }
