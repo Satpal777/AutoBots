@@ -14,18 +14,7 @@ import {
   setGmailThreadUnread,
 } from "@/server/gmail";
 import { requireSession } from "@/lib/auth/session";
-import { analyzeCachedInbox } from "@/server/intelligence";
-
-export async function analyzeInboxAction() {
-  const session = await requireSession();
-  try {
-    await analyzeCachedInbox(session.user.id);
-    revalidatePath("/dashboard/search");
-  } catch {
-    redirect("/dashboard/inbox?status=error");
-  }
-  redirect("/dashboard/inbox?status=analyzed");
-}
+import { correctEntityIntelligence } from "@/server/intelligence";
 
 const GmailIdSchema = z
   .string()
@@ -54,6 +43,40 @@ const MessageSchema = z.object({
 const DraftSchema = MessageSchema.extend({
   draftId: z.string().trim().max(256).optional(),
 });
+const IntelligenceCorrectionSchema = z.object({
+  entityId: z.string().trim().min(1).max(300),
+  priority: z.enum(["high", "normal", "low"]),
+  needsFollowUp: z.enum(["true", "false"]).transform((value) => value === "true"),
+});
+
+export async function correctInboxIntelligenceAction(formData: FormData) {
+  const session = await requireSession();
+  const parsed = IntelligenceCorrectionSchema.safeParse({
+    entityId: formData.get("entityId"),
+    priority: formData.get("priority"),
+    needsFollowUp: formData.get("needsFollowUp"),
+  });
+  if (!parsed.success) return;
+  await correctEntityIntelligence(session.user.id, parsed.data.entityId, parsed.data);
+  revalidateGmail();
+}
+
+export async function archiveGmailThreadInlineAction(formData: FormData) {
+  const threadId = parseId(formData, "threadId");
+  if (!threadId) return;
+  await archiveGmailThread(threadId);
+  revalidateGmail();
+}
+
+export async function setGmailThreadUnreadInlineAction(formData: FormData) {
+  const parsed = z.object({
+    threadId: GmailIdSchema,
+    unread: z.enum(["true", "false"]).transform((value) => value === "true"),
+  }).safeParse({ threadId: formData.get("threadId"), unread: formData.get("unread") });
+  if (!parsed.success) return;
+  await setGmailThreadUnread(parsed.data.threadId, parsed.data.unread);
+  revalidateGmail();
+}
 
 export async function refreshGmailInboxAction() {
   try {

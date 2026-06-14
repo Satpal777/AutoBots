@@ -34,7 +34,6 @@ const ServerEnvSchema = z.object({
   AGENT_MAX_STEPS: z.coerce.number().int().min(1).max(20).default(8),
   INNGEST_EVENT_KEY: z.string().min(1).optional(),
   INNGEST_SIGNING_KEY: z.string().min(1).optional(),
-  AI_PROVIDER_API_KEY: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof ServerEnvSchema>;

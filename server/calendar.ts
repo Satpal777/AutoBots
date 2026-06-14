@@ -1,6 +1,10 @@
 import "server-only";
 
 import type { Event, EventDateTime } from "@corsair-dev/googlecalendar";
+import { and, asc, eq, sql } from "drizzle-orm";
+import { getCorsairTenantId } from "@/lib/auth/session";
+import { getDb } from "@/lib/db";
+import { corsairAccounts, corsairEntities } from "@/lib/db/schema";
 
 import { getCorsairTenant } from "./corsair-tenant";
 
@@ -322,58 +326,73 @@ async function refreshCalendarRange(
   start: Date,
   end: Date,
 ): Promise<string | null> {
-  const result = await tenant.googlecalendar.api.events.getMany({
-    calendarId: PRIMARY_CALENDAR_ID,
-    timeMin: start.toISOString(),
-    timeMax: end.toISOString(),
-    singleEvents: true,
-    orderBy: "startTime",
-    maxResults: CALENDAR_PAGE_SIZE,
-  });
+  let pageToken: string | undefined;
+  let resolvedTimeZone: string | null = null;
 
-  if (isValidTimeZone(result.timeZone)) {
+  for (let page = 0; page < 20; page += 1) {
+    const result = await tenant.googlecalendar.api.events.getMany({
+      calendarId: PRIMARY_CALENDAR_ID,
+      timeMin: start.toISOString(),
+      timeMax: end.toISOString(),
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: CALENDAR_PAGE_SIZE,
+      ...(pageToken ? { pageToken } : {}),
+    });
+    if (isValidTimeZone(result.timeZone)) resolvedTimeZone = result.timeZone;
+    pageToken = result.nextPageToken;
+    if (!pageToken) break;
+  }
+
+  if (resolvedTimeZone) {
     await tenant.googlecalendar.db.calendars.upsertByEntityId(
       PRIMARY_CALENDAR_ID,
       {
         id: PRIMARY_CALENDAR_ID,
         summary: "Primary calendar",
-        timeZone: result.timeZone,
+        timeZone: resolvedTimeZone,
         createdAt: new Date(),
       },
     );
 
-    return result.timeZone;
+    return resolvedTimeZone;
   }
 
   return null;
 }
 
 async function getCachedEventsInRange(
-  tenant: CalendarTenant,
+  _tenant: CalendarTenant,
   start: Date,
   end: Date,
 ): Promise<CachedCalendarEvent[]> {
-  const events = await tenant.googlecalendar.db.events.list({ limit: 500 });
+  const userId = await getCorsairTenantId();
+  const startIso = start.toISOString();
+  const endIso = end.toISOString();
+  const eventStart = sql<string>`coalesce(${corsairEntities.data}->'start'->>'dateTime', ${corsairEntities.data}->'start'->>'date')::timestamptz`;
+  const eventEnd = sql<string>`coalesce(${corsairEntities.data}->'end'->>'dateTime', ${corsairEntities.data}->'end'->>'date', ${corsairEntities.data}->'start'->>'dateTime', ${corsairEntities.data}->'start'->>'date')::timestamptz`;
+  const rows = await getDb().select({
+    id: corsairEntities.id,
+    entity_id: corsairEntities.entityId,
+    entity_type: corsairEntities.entityType,
+    version: corsairEntities.version,
+    data: corsairEntities.data,
+    created_at: corsairEntities.createdAt,
+    updated_at: corsairEntities.updatedAt,
+  }).from(corsairEntities)
+    .innerJoin(corsairAccounts, eq(corsairEntities.accountId, corsairAccounts.id))
+    .where(and(
+      eq(corsairAccounts.tenantId, userId),
+      eq(corsairEntities.entityType, "events"),
+      sql`coalesce(${corsairEntities.data}->>'calendarId', ${PRIMARY_CALENDAR_ID}) = ${PRIMARY_CALENDAR_ID}`,
+      sql`coalesce(${corsairEntities.data}->>'status', 'confirmed') <> 'cancelled'`,
+      sql`${eventStart} < ${endIso}::timestamptz`,
+      sql`${eventEnd} > ${startIso}::timestamptz`,
+    ))
+    .orderBy(asc(eventStart))
+    .limit(1_000);
 
-  return events
-    .filter(({ data }) => {
-      if (
-        data.calendarId !== PRIMARY_CALENDAR_ID ||
-        data.status === "cancelled"
-      ) {
-        return false;
-      }
-
-      const eventStart = getEventTimestamp(data.start, "start");
-      const eventEnd = getEventTimestamp(data.end ?? data.start, "end");
-
-      return eventStart < end.getTime() && eventEnd > start.getTime();
-    })
-    .sort(
-      (left, right) =>
-        getEventTimestamp(left.data.start, "start") -
-        getEventTimestamp(right.data.start, "start"),
-    );
+  return rows as CachedCalendarEvent[];
 }
 
 function getCalendarRange(

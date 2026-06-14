@@ -51,7 +51,6 @@ export function GmailSectionNav({ active }: { active: "inbox" | "drafts" }) {
 export function GmailNotice({ status }: { status?: string }) {
   const messages: Record<string, string> = {
     archived: "Conversation archived.",
-    analyzed: "Workspace intelligence updated. Search now includes priority and follow-up signals.",
     error: "Gmail could not complete that action. Please try again.",
     invalid: "Check the message fields and try again.",
     labeled: "Label added.",
@@ -220,63 +219,90 @@ export function GmailThreadView({
         ) : null}
       </div>
 
-      <section className="mt-6 space-y-4">
-        {thread.messages.map((message) => (
-          <article key={message.id} className="product-panel p-5 sm:p-6">
-            <div className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-ink">
-                  {message.from ?? "Sender unavailable"}
-                </p>
-                <p className="mt-1 truncate text-xs text-muted">
-                  To: {message.to ?? "Recipient unavailable"}
-                </p>
-              </div>
-              <time className="shrink-0 text-xs font-medium text-muted">
-                {formatMessageDate(message.receivedAt)}
-              </time>
-            </div>
-            <div className="mt-5 whitespace-pre-wrap break-words text-sm leading-7 text-ink/85">
-              {message.body ?? "Message body unavailable."}
-            </div>
-          </article>
-        ))}
-      </section>
-
-      {thread.replyTo ? (
-        <section className="product-panel-muted mt-6 p-5 sm:p-6">
-          <div className="flex items-center gap-2 text-sm font-semibold text-forest">
-            <ReplyIcon className="size-4" />
-            Reply
+      <section className="gmail-conversation mt-6" aria-label="Email conversation">
+        <div className="gmail-conversation-heading">
+          <div>
+            <p className="text-sm font-semibold text-ink">Conversation</p>
+            <p className="mt-0.5 text-xs text-muted">Oldest message first</p>
           </div>
-          <form action={replyToGmailThreadAction} className="mt-4">
-            <input type="hidden" name="threadId" value={thread.id} />
-            <input type="hidden" name="to" value={thread.replyTo} />
-            <input
-              type="hidden"
-              name="subject"
-              value={prefixReplySubject(thread.subject)}
-            />
-            <label className="sr-only" htmlFor="reply-body">
-              Reply message
-            </label>
-            <textarea
-              id="reply-body"
-              name="body"
-              required
-              rows={6}
-              className="product-input w-full resize-y px-4 py-3 text-sm leading-6"
-              placeholder={`Reply to ${thread.replyTo}`}
-            />
-            <div className="mt-3 flex justify-end">
-              <GmailSubmitButton pendingLabel="Sending reply...">
-                <SendIcon className="size-4" />
-                Send reply
-              </GmailSubmitButton>
+          <span className="rounded-lg bg-surface-soft px-2.5 py-1 text-xs font-semibold text-muted">
+            {thread.messages.length} message{thread.messages.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        <div className="gmail-timeline">
+          {thread.messages.map((message, index) => (
+            <article
+              key={message.id}
+              className="gmail-timeline-item"
+              style={{ "--thread-index": index } as React.CSSProperties}
+            >
+              <div className="gmail-timeline-marker" aria-hidden="true">
+                {getSenderInitials(message.from)}
+              </div>
+              <div className="gmail-message">
+                <header className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <p className="truncate text-sm font-semibold text-ink">
+                        {getSenderName(message.from)}
+                      </p>
+                      {message.unread ? <span className="size-1.5 shrink-0 rounded-full bg-gold" title="Unread" /> : null}
+                    </div>
+                    <p className="mt-1 truncate text-xs text-muted">
+                      {message.from ?? "Sender unavailable"}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-muted">
+                      To {message.to ?? "recipient unavailable"}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-[0.68rem] font-semibold text-muted">
+                      {index + 1} of {thread.messages.length}
+                    </span>
+                    <time className="text-xs font-medium text-muted">
+                      {formatMessageDate(message.receivedAt)}
+                    </time>
+                  </div>
+                </header>
+                <div className="mt-5 whitespace-pre-wrap break-words text-sm leading-7 text-ink/85">
+                  {message.body ?? "Message body unavailable."}
+                </div>
+              </div>
+            </article>
+          ))}
+
+          {thread.replyTo ? (
+            <div className="gmail-timeline-item gmail-timeline-reply" style={{ "--thread-index": thread.messages.length } as React.CSSProperties}>
+              <div className="gmail-timeline-marker gmail-timeline-marker-reply" aria-hidden="true">
+                <ReplyIcon className="size-4" />
+              </div>
+              <section className="gmail-reply-composer">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-ink">Continue the conversation</p>
+                    <p className="mt-0.5 truncate text-xs text-muted">Reply to {thread.replyTo}</p>
+                  </div>
+                  <ReplyIcon className="size-4 shrink-0 text-forest" />
+                </div>
+                <form action={replyToGmailThreadAction} className="mt-4">
+                  <input type="hidden" name="threadId" value={thread.id} />
+                  <input type="hidden" name="to" value={thread.replyTo} />
+                  <input type="hidden" name="subject" value={prefixReplySubject(thread.subject)} />
+                  <label className="sr-only" htmlFor="reply-body">Reply message</label>
+                  <textarea id="reply-body" name="body" required rows={6} className="product-input w-full resize-y px-4 py-3 text-sm leading-6" placeholder="Write your reply..." />
+                  <div className="mt-3 flex justify-end">
+                    <GmailSubmitButton pendingLabel="Sending reply...">
+                      <SendIcon className="size-4" />
+                      Send reply
+                    </GmailSubmitButton>
+                  </div>
+                </form>
+              </section>
             </div>
-          </form>
-        </section>
-      ) : null}
+          ) : null}
+        </div>
+      </section>
     </>
   );
 }
@@ -407,7 +433,18 @@ function formatMessageDate(value: string | null): string {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "UTC",
   }).format(new Date(value));
+}
+
+function getSenderName(value: string | null): string {
+  if (!value) return "Sender unavailable";
+  return value.match(/^"?([^"<]+)"?\s*</)?.[1]?.trim() || value.split("@")[0] || value;
+}
+
+function getSenderInitials(value: string | null): string {
+  const name = getSenderName(value);
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "M";
 }
 
 function prefixReplySubject(subject: string | null): string {

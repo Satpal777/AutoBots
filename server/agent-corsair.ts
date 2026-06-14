@@ -40,7 +40,7 @@ export const agentCorsair = createCorsair({
         overrides: {
           "events.create": "require_approval",
           "events.update": "require_approval",
-          "events.delete": "deny",
+          "events.delete": "require_approval",
         },
       },
     }),

@@ -79,6 +79,36 @@ export const corsairEntities = pgTable(
       table.accountId,
       table.entityId,
     ),
+    uniqueIndex("corsair_entities_account_type_entity_unique").on(
+      table.accountId,
+      table.entityType,
+      table.entityId,
+    ),
+  ],
+);
+
+export const integrationSyncState = pgTable(
+  "integration_sync_state",
+  {
+    id: text("id").primaryKey(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    tenantId: text("tenant_id").notNull(),
+    integration: text("integration").notNull(),
+    scope: text("scope").notNull(),
+    cursor: text("cursor"),
+  },
+  (table) => [
+    uniqueIndex("integration_sync_state_tenant_integration_scope_unique").on(
+      table.tenantId,
+      table.integration,
+      table.scope,
+    ),
+    index("integration_sync_state_tenant_idx").on(table.tenantId),
   ],
 );
 

@@ -6,7 +6,7 @@ import { CalendarIcon, MailIcon, PencilIcon, SearchIcon, SettingsIcon, SparklesI
 
 const commands = [
   { label: "Open Autobot Chat", keywords: "ai assistant", href: "/dashboard/chat", icon: SparklesIcon, shortcut: "G A" },
-  { label: "Search workspace", keywords: "email calendar find", href: "/dashboard/search", icon: SearchIcon, shortcut: "/" },
+  { label: "Search inbox", keywords: "email gmail find priority follow up unread", href: "/dashboard/inbox", icon: SearchIcon, shortcut: "/" },
   { label: "Open inbox", keywords: "gmail mail", href: "/dashboard/inbox", icon: MailIcon, shortcut: "G I" },
   { label: "Compose email", keywords: "gmail send message", href: "/dashboard/inbox/compose", icon: PencilIcon, shortcut: "C" },
   { label: "Open calendar", keywords: "schedule events", href: "/dashboard/calendar", icon: CalendarIcon, shortcut: "G C" },

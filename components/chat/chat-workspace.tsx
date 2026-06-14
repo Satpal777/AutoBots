@@ -7,7 +7,6 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  Clock3,
   ExternalLink,
   Gift,
   Infinity as InfinityIcon,
@@ -22,6 +21,7 @@ import {
   SendHorizontal,
   Settings2,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
   Trash2,
   Users,
@@ -72,6 +72,7 @@ export function ChatWorkspace({
   })));
   const [message, setMessage] = useState("");
   const [mode, setMode] = useState<ChatMode>("auto");
+  const [autoApprove, setAutoApprove] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -109,7 +110,7 @@ export function ChatWorkspace({
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ conversationId: activeId, message: content, mode, byok }),
+        body: JSON.stringify({ conversationId: activeId, message: content, mode, byok, autoApprove }),
       });
       if (!response.ok || !response.body) {
         const error = await response.text();
@@ -177,6 +178,15 @@ export function ChatWorkspace({
     router.refresh();
   }
 
+  function updateActionCard(cardId: string, status: ActionChatCard["status"]) {
+    setMessages((current) => current.map((item) => ({
+      ...item,
+      cards: item.cards?.map((card) => card.kind === "action" && card.id === cardId
+        ? { ...card, status, approvalUrl: null }
+        : card),
+    })));
+  }
+
   return (
     <div className="grid min-h-[calc(100svh-8.5rem)] gap-3 md:h-[calc(100svh-8.5rem)] md:min-h-0 md:grid-cols-[minmax(0,1fr)_15rem] md:overflow-hidden lg:h-full lg:grid-cols-[minmax(0,1fr)_17rem]">
       <section className="product-panel flex min-h-[40rem] min-w-0 flex-col overflow-hidden md:min-h-0">
@@ -196,13 +206,7 @@ export function ChatWorkspace({
               <Link href="/dashboard/settings" className="font-semibold text-forest">Open settings</Link>
             </div>
           ) : null}
-          {approvals.map((approval) => (
-            <Link key={approval.token} href={`/dashboard/approvals/${approval.token}`} className="block rounded-xl border border-gold/40 bg-gold-soft p-4 transition hover:border-gold">
-              <p className="text-xs font-semibold uppercase tracking-wider text-forest">Approval needed</p>
-              <p className="mt-1 text-sm font-semibold text-ink">{approval.plugin}: {approval.endpoint}</p>
-              <p className="mt-1 text-xs text-muted">Review the exact action before it runs.</p>
-            </Link>
-          ))}
+          {approvals.map((approval) => <PendingApprovalCard key={approval.token} token={approval.token} title={`${approval.plugin}: ${approval.endpoint}`} />)}
           {messages.length === 0 ? (
             <EmptyChat
               userName={userName}
@@ -211,6 +215,8 @@ export function ChatWorkspace({
               setMessage={setMessage}
               mode={mode}
               setMode={setMode}
+              autoApprove={autoApprove}
+              setAutoApprove={setAutoApprove}
               pending={pending}
               send={send}
               textareaRef={textareaRef}
@@ -220,13 +226,13 @@ export function ChatWorkspace({
               <div className={item.role === "user" ? "rounded-2xl bg-forest px-4 py-3 text-sm leading-6 text-white" : "rounded-2xl bg-surface-soft px-4 py-3 text-sm leading-6 text-ink"}>
                 {item.content || (pending ? "Thinking..." : "")}
               </div>
-              {item.role === "assistant" && item.cards?.length ? <ChatCards cards={item.cards} /> : null}
+              {item.role === "assistant" && item.cards?.length ? <ChatCards cards={item.cards} onActionStatus={updateActionCard} /> : null}
             </div>
           ))}
           {error ? <p className="text-sm font-medium text-red-700">{error}</p> : null}
         </div>
         {messages.length > 0 ? <div className="shrink-0 border-t border-line bg-surface p-4">
-          <ChatComposer message={message} setMessage={setMessage} mode={mode} setMode={setMode} pending={pending} send={send} textareaRef={textareaRef} />
+          <ChatComposer message={message} setMessage={setMessage} mode={mode} setMode={setMode} autoApprove={autoApprove} setAutoApprove={setAutoApprove} pending={pending} send={send} textareaRef={textareaRef} />
         </div> : null}
       </section>
 
@@ -294,13 +300,14 @@ export function ChatWorkspace({
   );
 }
 
-function ChatCards({ cards }: { cards: ChatCard[] }) {
+function ChatCards({ cards, onActionStatus }: { cards: ChatCard[]; onActionStatus: (cardId: string, status: ActionChatCard["status"]) => void }) {
   return (
     <div className="mt-3 grid gap-2 sm:grid-cols-2">
-      {cards.map((card) => {
-        if (card.kind === "email") return <EmailCard key={`${card.kind}:${card.id}`} card={card} />;
-        if (card.kind === "calendar") return <CalendarCard key={`${card.kind}:${card.id}`} card={card} />;
-        return <ActionCard key={`${card.kind}:${card.id}`} card={card} />;
+      {cards.map((card, index) => {
+        const key = `${card.kind}:${card.id}:${index}`;
+        if (card.kind === "email") return <EmailCard key={key} card={card} />;
+        if (card.kind === "calendar") return <CalendarCard key={key} card={card} />;
+        return <ActionCard key={key} card={card} onStatus={(status) => onActionStatus(card.id, status)} />;
       })}
     </div>
   );
@@ -356,7 +363,8 @@ function CalendarCard({ card }: { card: CalendarChatCard }) {
   );
 }
 
-function ActionCard({ card }: { card: ActionChatCard }) {
+function ActionCard({ card, onStatus }: { card: ActionChatCard; onStatus: (status: ActionChatCard["status"]) => void }) {
+  const token = card.approvalUrl?.match(/\/dashboard\/approvals\/([A-Za-z0-9_-]+)/)?.[1];
   const content = (
     <div className="rounded-xl border border-gold/40 bg-gold-soft p-4 transition hover:border-gold">
       <div className="flex items-start gap-3">
@@ -364,15 +372,42 @@ function ActionCard({ card }: { card: ActionChatCard }) {
           {card.status === "pending" ? <ShieldAlert aria-hidden="true" className="size-4" /> : <CheckCircle2 aria-hidden="true" className="size-4" />}
         </div>
         <div className="min-w-0">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-wider text-forest">{card.status === "pending" ? "Approval needed" : "Completed"}</p>
+          <p className="text-[0.68rem] font-semibold uppercase tracking-wider text-forest">{formatActionStatus(card.status)}</p>
           <p className="mt-1 text-sm font-semibold text-ink">{card.title}</p>
         </div>
       </div>
       {card.details.length > 0 ? <div className="mt-3 space-y-1 text-xs text-muted">{card.details.map((detail) => <p key={detail} className="truncate">{detail}</p>)}</div> : null}
-      {card.status === "pending" ? <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-forest"><Clock3 aria-hidden="true" className="size-3.5" />Review before it runs</p> : null}
+      {card.status === "pending" && token ? <InlineApprovalControls token={token} onStatus={onStatus} /> : null}
     </div>
   );
-  return card.approvalUrl ? <Link href={card.approvalUrl}>{content}</Link> : content;
+  return content;
+}
+
+function PendingApprovalCard({ token, title }: { token: string; title: string }) {
+  const [status, setStatus] = useState<ActionChatCard["status"]>("pending");
+  if (status !== "pending") return null;
+  return <div className="rounded-xl border border-gold/40 bg-gold-soft p-4"><p className="text-xs font-semibold uppercase tracking-wider text-forest">Approval needed</p><p className="mt-1 text-sm font-semibold text-ink">{title}</p><InlineApprovalControls token={token} onStatus={setStatus} /></div>;
+}
+
+function InlineApprovalControls({ token, onStatus }: { token: string; onStatus: (status: ActionChatCard["status"]) => void }) {
+  const [working, setWorking] = useState(false);
+  async function decide(decision: "approve" | "deny") {
+    if (working) return;
+    setWorking(true);
+    try {
+      const response = await fetch(`/api/approvals/${encodeURIComponent(token)}/${decision}`, { method: "POST" });
+      onStatus(response.ok ? (decision === "approve" ? "completed" : "denied") : "failed");
+    } catch {
+      onStatus("failed");
+    } finally {
+      setWorking(false);
+    }
+  }
+  return <div className="mt-3 flex gap-2"><button type="button" disabled={working} onClick={() => decide("approve")} className="product-button-primary h-9 min-h-0 px-3 text-xs disabled:opacity-60">Approve and run</button><button type="button" disabled={working} onClick={() => decide("deny")} className="product-button-secondary h-9 min-h-0 px-3 text-xs disabled:opacity-60">Deny</button></div>;
+}
+
+function formatActionStatus(status: ActionChatCard["status"]) {
+  return status === "pending" ? "Approval needed" : status === "completed" ? "Completed" : status === "denied" ? "Denied" : "Failed";
 }
 
 function mergeCards(current: ChatCard[], incoming: ChatCard[]) {
@@ -385,7 +420,11 @@ function formatCardDate(value: string | null) {
   if (!value) return "";
   const date = new Date(value);
   try {
-    return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
+    return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    }).format(date);
   } catch {
     return "";
   }
@@ -394,10 +433,17 @@ function formatCardDate(value: string | null) {
 function formatEventTime(card: CalendarChatCard) {
   if (!card.startAt) return "Time not available";
   try {
-    if (card.allDay) return new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${card.startAt}T00:00:00Z`));
+    if (card.allDay) return new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${card.startAt}T00:00:00Z`));
     const start = new Date(card.startAt);
     if (Number.isNaN(start.getTime())) return card.startAt;
-    return new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", ...(card.timeZone ? { timeZone: card.timeZone } : {}) }).format(start);
+    return new Intl.DateTimeFormat("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: card.timeZone ?? "UTC",
+    }).format(start);
   } catch {
     return card.startAt;
   }
@@ -410,6 +456,8 @@ function EmptyChat({
   setMessage,
   mode,
   setMode,
+  autoApprove,
+  setAutoApprove,
   pending,
   send,
   textareaRef,
@@ -420,6 +468,8 @@ function EmptyChat({
   setMessage: (message: string) => void;
   mode: ChatMode;
   setMode: (mode: ChatMode) => void;
+  autoApprove: boolean;
+  setAutoApprove: (value: boolean) => void;
   pending: boolean;
   send: () => Promise<void>;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -439,11 +489,11 @@ function EmptyChat({
       What should Autobot handle today?
     </h1>
     <p className="mx-auto mt-3 max-w-xl text-pretty text-sm leading-6 text-muted">
-      Search your workspace, prepare an email, or arrange a meeting. You approve every external action.
+      Search your workspace, prepare an email, or arrange a meeting. Auto-approve can run prepared actions immediately.
     </p>
 
     <div className="mt-8 text-left">
-      <ChatComposer message={message} setMessage={setMessage} mode={mode} setMode={setMode} pending={pending} send={send} textareaRef={textareaRef} featured />
+      <ChatComposer message={message} setMessage={setMessage} mode={mode} setMode={setMode} autoApprove={autoApprove} setAutoApprove={setAutoApprove} pending={pending} send={send} textareaRef={textareaRef} featured />
       <div className="mt-3 flex flex-wrap justify-center gap-2">
         {prompts.map(({ label, prompt, icon: Icon }) => (
           <button key={label} type="button" onClick={() => setMessage(prompt)} className="chat-prompt-chip">
@@ -486,6 +536,8 @@ function ChatComposer({
   setMessage,
   mode,
   setMode,
+  autoApprove,
+  setAutoApprove,
   pending,
   send,
   textareaRef,
@@ -495,6 +547,8 @@ function ChatComposer({
   setMessage: (message: string) => void;
   mode: ChatMode;
   setMode: (mode: ChatMode) => void;
+  autoApprove: boolean;
+  setAutoApprove: (value: boolean) => void;
   pending: boolean;
   send: () => Promise<void>;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -613,6 +667,18 @@ function ChatComposer({
           <Link href="/dashboard/settings/ai" aria-label="Open AI settings" title="AI settings" className="chat-composer-icon">
             <Settings2 aria-hidden="true" className="size-4" />
           </Link>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={autoApprove}
+            onClick={() => setAutoApprove(!autoApprove)}
+            title={autoApprove ? "Auto-approve is on" : "Auto-approve is off"}
+            className={`chat-mode-trigger ${autoApprove ? "bg-forest-soft text-forest" : ""}`}
+          >
+            <ShieldCheck aria-hidden="true" className="size-3.5" />
+            <span>Auto-approve</span>
+            <span className={`h-4 w-7 rounded-full p-0.5 transition ${autoApprove ? "bg-forest" : "bg-line"}`}><span className={`block size-3 rounded-full bg-white transition-transform ${autoApprove ? "translate-x-3" : ""}`} /></span>
+          </button>
         </div>
         <button type="button" onClick={send} disabled={pending || !message.trim()} aria-label={pending ? "Autobot is working" : "Send message"} title={pending ? "Autobot is working" : "Send message"} className="product-button-primary grid size-10 shrink-0 place-items-center rounded-full">
           {pending ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <SendHorizontal aria-hidden="true" className="size-4" />}

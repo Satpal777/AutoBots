@@ -11,7 +11,6 @@ import {
   CalendarIcon,
   CommandIcon,
   MailIcon,
-  SearchIcon,
   SettingsIcon,
   SparklesIcon,
 } from "@/components/ui/icons";
@@ -21,7 +20,6 @@ const navigation = [
   { href: "/dashboard", label: "Today", icon: CommandIcon },
   { href: "/dashboard/inbox", label: "Inbox", icon: MailIcon },
   { href: "/dashboard/calendar", label: "Calendar", icon: CalendarIcon },
-  { href: "/dashboard/search", label: "Search", icon: SearchIcon },
   { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 

@@ -4,10 +4,11 @@ import { tool } from "ai";
 import { z } from "zod";
 import { agentCorsair } from "@/server/agent-corsair";
 import { searchWorkspace } from "@/server/intelligence";
+import { decideApproval } from "@/server/approvals";
 
 const EmailAddress = z.string().email();
 
-export function buildAgentTools(userId: string, conversationContext: string) {
+export function buildAgentTools(userId: string, conversationContext: string, autoApprove = false) {
   const tenant = agentCorsair.withTenant(userId);
 
   const allTools = {
@@ -63,6 +64,8 @@ export function buildAgentTools(userId: string, conversationContext: string) {
           raw: buildRawEmail({ to, subject, body }),
           ...(threadId ? { threadId } : {}),
         }),
+        userId,
+        autoApprove,
       ),
     }),
     gmail_get_thread: tool({
@@ -90,6 +93,8 @@ export function buildAgentTools(userId: string, conversationContext: string) {
       }),
       execute: async ({ to, subject, body }) => safelyExecute(() =>
         tenant.gmail.api.drafts.create({ draft: { message: { raw: buildRawEmail({ to, subject, body }) } } }),
+        userId,
+        autoApprove,
       ),
     }),
     gmail_archive_thread: tool({
@@ -97,6 +102,8 @@ export function buildAgentTools(userId: string, conversationContext: string) {
       inputSchema: z.object({ threadId: z.string().min(1).max(200) }),
       execute: async ({ threadId }) => safelyExecute(() =>
         tenant.gmail.api.threads.modify({ id: threadId, removeLabelIds: ["INBOX"] }),
+        userId,
+        autoApprove,
       ),
     }),
     calendar_list_events: tool({
@@ -155,6 +162,8 @@ export function buildAgentTools(userId: string, conversationContext: string) {
             ...(attendees.length > 0 ? { attendees: attendees.map((email) => ({ email })) } : {}),
           },
         }),
+        userId,
+        autoApprove,
       ),
     }),
     calendar_find_availability: tool({
@@ -213,7 +222,23 @@ export function buildAgentTools(userId: string, conversationContext: string) {
             ...(mergedAttendees !== undefined ? { attendees: mergedAttendees } : {}),
           },
         });
+      }, userId, autoApprove),
+    }),
+    calendar_delete_event: tool({
+      description: "Request explicit user approval to permanently delete a calendar event. This destructive action is never auto-approved.",
+      inputSchema: z.object({
+        eventId: z.string().min(1).max(300),
+        notifyAttendees: z.boolean().default(true),
       }),
+      execute: async ({ eventId, notifyAttendees }) => safelyExecute(() =>
+        tenant.googlecalendar.api.events.delete({
+          calendarId: "primary",
+          id: eventId,
+          sendUpdates: notifyAttendees ? "all" : "none",
+        }),
+        userId,
+        false,
+      ),
     }),
   };
 
@@ -233,14 +258,16 @@ type AgentToolName =
   | "calendar_list_events"
   | "calendar_create_event"
   | "calendar_find_availability"
-  | "calendar_update_event";
+  | "calendar_update_event"
+  | "calendar_delete_event";
 
 function selectAgentToolNames(context: string): AgentToolName[] {
   const text = context.toLowerCase();
   const gmailDomain = /\b(email|emails|gmail|inbox|mail|message|messages|unread|sender|recipient|reply)\b/.test(text);
   const calendarDomain = /\b(calendar|calender|event|events|meeting|meetings|schedule|agenda|availability|available|free time|appointment)\b/.test(text);
   const gmailWrite = /\b(send|reply|draft|compose|forward|write)\b/.test(text);
-  const calendarWrite = calendarDomain && /\b(create|schedule|book|invite|add|move|reschedule|update)\b/.test(text);
+  const calendarDelete = calendarDomain && /\b(delete|remove|cancel)\b/.test(text);
+  const calendarWrite = calendarDomain && /\b(create|schedule|book|invite|add|move|reschedule|update|delete|remove|cancel)\b/.test(text);
   const readIntent = /\b(show|list|find|search|check|summarize|latest|recent|unread|agenda|availability|available|free time)\b/.test(text);
   const gmailRead = gmailDomain && (!gmailWrite || readIntent);
   const calendarRead = calendarDomain && (!calendarWrite || readIntent);
@@ -252,8 +279,12 @@ function selectAgentToolNames(context: string): AgentToolName[] {
   if (gmailWrite && !/\bdraft\b/.test(text)) selected.add("gmail_send_message");
   if (gmailWrite && /\bdraft\b/.test(text)) selected.add("gmail_create_draft");
   if (gmailDomain && /\barchive\b/.test(text)) selected.add("gmail_archive_thread");
-  if (calendarWrite && !/\b(move|reschedule|update|change)\b/.test(text)) selected.add("calendar_create_event");
+  if (calendarWrite && !calendarDelete && !/\b(move|reschedule|update|change)\b/.test(text)) selected.add("calendar_create_event");
   if (calendarWrite && /\b(move|reschedule|update|change)\b/.test(text)) selected.add("calendar_update_event");
+  if (calendarDelete) {
+    selected.add("calendar_list_events");
+    selected.add("calendar_delete_event");
+  }
   if (calendarDomain && /\b(availability|available|free time|free slot)\b/.test(text)) selected.add("calendar_find_availability");
   if (/\b(find|search|remember|discuss|topic|about)\b/.test(text)) selected.add("workspace_search");
 
@@ -265,10 +296,28 @@ function selectAgentToolNames(context: string): AgentToolName[] {
   return [...selected];
 }
 
-async function safelyExecute<T>(operation: () => Promise<T>): Promise<T | { error: string }> {
+async function safelyExecute<T>(
+  operation: () => Promise<T>,
+  userId?: string,
+  autoApprove = false,
+): Promise<T | { error: string } | { autoApproved: true; result: unknown }> {
   try {
     return await operation();
   } catch (error) {
+    const token = error instanceof Error
+      ? error.message.match(/\/dashboard\/approvals\/([A-Za-z0-9_-]+)/)?.[1]
+      : undefined;
+    if (autoApprove && userId && token) {
+      try {
+        const result = await decideApproval(userId, token, "approved");
+        if (result && typeof result === "object" && "error" in result && result.error) {
+          return { error: "The action was approved but failed to execute." };
+        }
+        return { autoApproved: true, result };
+      } catch {
+        return { error: "The action could not be auto-approved." };
+      }
+    }
     return { error: getSafeErrorMessage(error) };
   }
 }

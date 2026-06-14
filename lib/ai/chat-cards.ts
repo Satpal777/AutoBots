@@ -26,7 +26,7 @@ export type ActionChatCard = {
   id: string;
   integration: "gmail" | "calendar" | "workspace";
   title: string;
-  status: "pending" | "completed";
+  status: "pending" | "completed" | "denied" | "failed";
   approvalUrl: string | null;
   details: string[];
 };
@@ -45,6 +45,7 @@ export function extractChatCards(
   toolName: string,
   input: unknown,
   output: unknown,
+  toolCallId?: string,
 ): ChatCard[] {
   const values = unwrapToolOutput(output);
   const cards: ChatCard[] = [];
@@ -61,7 +62,7 @@ export function extractChatCards(
   });
 
   if (isWriteTool(toolName, input) || findApprovalPath(values)) {
-    cards.push(toActionCard(toolName, input, values));
+    cards.push(toActionCard(toolName, input, values, toolCallId));
   }
 
   return deduplicateCards(cards).slice(0, MAX_CARDS_PER_TOOL);
@@ -162,7 +163,7 @@ function toCalendarCard(value: Record<string, unknown>): CalendarChatCard | null
   };
 }
 
-function toActionCard(toolName: string, input: unknown, output: unknown[]): ActionChatCard {
+function toActionCard(toolName: string, input: unknown, output: unknown[], toolCallId?: string): ActionChatCard {
   const approvalPath = findApprovalPath(output);
   const operation = getCorsairOperation(input);
   const searchableName = `${toolName} ${operation ?? ""}`.toLowerCase();
@@ -171,14 +172,16 @@ function toActionCard(toolName: string, input: unknown, output: unknown[]): Acti
     : searchableName.includes("calendar")
       ? "calendar"
       : "workspace";
-  const pending = Boolean(approvalPath) || /approval|pending/i.test(JSON.stringify(output));
+  const serializedOutput = JSON.stringify(output);
+  const pending = Boolean(approvalPath) || /approval|pending/i.test(serializedOutput);
+  const failed = /"error"\s*:/.test(serializedOutput);
 
   return {
     kind: "action",
-    id: `${toolName}:${approvalPath ?? JSON.stringify(input).slice(0, 80)}`,
+    id: toolCallId ?? `${toolName}:${approvalPath ?? JSON.stringify(input)}`,
     integration,
     title: humanizeToolName(operation ?? toolName),
-    status: pending ? "pending" : "completed",
+    status: pending ? "pending" : failed ? "failed" : "completed",
     approvalUrl: approvalPath,
     details: getActionDetails(input),
   };
@@ -191,6 +194,7 @@ function getActionDetails(input: unknown): string[] {
   const fields: [string, unknown][] = [
     ["To", input.to],
     ["Subject", input.subject],
+    ["Event ID", input.eventId],
     ["Title", event.summary],
     ["Start", isRecord(event.start) ? event.start.dateTime ?? event.start.date : undefined],
     ["End", isRecord(event.end) ? event.end.dateTime ?? event.end.date : undefined],
@@ -222,11 +226,12 @@ function isWriteTool(toolName: string, input: unknown) {
   const operation = getCorsairOperation(input);
   const name = operation ?? toolName;
   return /\.(send|create|update|modify|insert|patch)$/i.test(name)
-    || /_(send|create|update|modify|insert|patch)(_|$)/i.test(name);
+    || /_(send|create|update|modify|insert|patch|delete)(_|$)/i.test(name)
+    || /\.delete$/i.test(name);
 }
 
 function humanizeToolName(toolName: string) {
-  const action = toolName.match(/(?:^|[._])(send|create|update|modify|insert|patch)(?:[._]|$)/i)?.[1]
+  const action = toolName.match(/(?:^|[._])(send|create|update|modify|insert|patch|delete)(?:[._]|$)/i)?.[1]
     ?? toolName.split(/[._]/).at(-1)
     ?? "action";
   const integration = toolName.toLowerCase().includes("gmail")
