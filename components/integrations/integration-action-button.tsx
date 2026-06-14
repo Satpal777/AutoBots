@@ -16,14 +16,14 @@ export function IntegrationActionButton({
   const { pending } = useFormStatus();
   const className =
     variant === "primary"
-      ? "bg-forest text-white hover:bg-forest-hover"
-      : "bg-surface-soft text-forest hover:bg-gold-soft";
+      ? "product-button-primary"
+      : "product-button-secondary";
 
   return (
     <button
       type="submit"
       disabled={pending}
-      className={`inline-flex min-h-10 min-w-28 items-center justify-center rounded-xl px-4 text-sm font-semibold transition disabled:cursor-wait disabled:opacity-60 ${className}`}
+      className={`inline-flex min-w-28 items-center justify-center px-4 disabled:cursor-wait disabled:opacity-60 ${className}`}
     >
       {pending ? pendingLabel : children}
     </button>

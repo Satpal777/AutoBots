@@ -67,7 +67,7 @@ export default async function ComposePage({ searchParams }: ComposePageProps) {
         action={
           <Link
             href="/dashboard/inbox"
-            className="inline-flex min-h-10 items-center rounded-xl bg-surface-soft px-4 text-sm font-semibold text-forest transition hover:bg-gold-soft"
+            className="product-button-secondary inline-flex items-center px-4"
           >
             Back to inbox
           </Link>

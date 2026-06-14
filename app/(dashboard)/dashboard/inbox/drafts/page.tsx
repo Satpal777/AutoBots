@@ -53,7 +53,7 @@ export default async function DraftsPage({ searchParams }: DraftsPageProps) {
         action={
           <Link
             href="/dashboard/inbox/compose"
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-forest px-4 text-sm font-semibold text-white transition hover:bg-forest-hover"
+            className="product-button-primary inline-flex items-center gap-2 px-4"
           >
             <PencilIcon className="size-4" />
             Compose email

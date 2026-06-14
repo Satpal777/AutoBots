@@ -4,7 +4,6 @@ import { AutobotMark } from "@/components/brand/autobot-logo";
 import {
   ArrowRightIcon,
   CalendarIcon,
-  CommandIcon,
   MailIcon,
 } from "@/components/ui/icons";
 import {
@@ -26,11 +25,8 @@ export function PageHeader({
   return (
     <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <div className="flex items-center gap-2 text-sm font-semibold text-gold">
-          <span className="size-1.5 rounded-full bg-gold" />
-          {label}
-        </div>
-        <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-ink sm:text-4xl">
+        <div className="text-sm font-medium text-muted">{label}</div>
+        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
           {title}
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-6 text-muted">{description}</p>
@@ -57,12 +53,12 @@ export function DayRoutePanel({
           : "Your workspace is quiet right now.";
 
   return (
-    <section className="dashboard-focus mt-8 overflow-hidden rounded-2xl bg-forest text-white">
-      <div className="grid min-h-[25rem] lg:grid-cols-[1fr_0.9fr]">
-        <div className="flex flex-col justify-between p-6 sm:p-8 lg:p-10">
+    <section className="dashboard-focus mt-8 overflow-hidden rounded-xl bg-forest text-white">
+      <div className="grid lg:grid-cols-[1fr_0.8fr]">
+        <div className="flex flex-col justify-between p-6 sm:p-8">
           <div>
             <div className="flex items-center gap-3">
-              <span className="grid size-11 place-items-center rounded-xl bg-white/10 text-white">
+              <span className="grid size-10 place-items-center rounded-lg bg-white/10 text-white">
                 <AutobotMark inverse />
               </span>
               <div>
@@ -72,7 +68,7 @@ export function DayRoutePanel({
                 </p>
               </div>
             </div>
-            <h2 className="text-pretty mt-10 max-w-xl text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+            <h2 className="text-pretty mt-8 max-w-xl text-3xl font-semibold tracking-[-0.04em]">
               {routeMessage}
             </h2>
           </div>
@@ -94,28 +90,15 @@ export function DayRoutePanel({
           </div>
         </div>
 
-        <div className="dashboard-focus-map relative grid min-h-80 place-items-center overflow-hidden">
-          <div className="dashboard-orbit dashboard-orbit-outer absolute size-72 rounded-full border border-white/12 sm:size-80" />
-          <div className="dashboard-orbit dashboard-orbit-inner absolute size-48 rounded-full border border-white/12 sm:size-56" />
-          <div className="relative z-10 grid size-24 place-items-center rounded-full bg-gold-soft text-forest shadow-card">
-            <CommandIcon className="size-8" />
-            <span className="dashboard-status-ring absolute inset-0 rounded-full" />
+        <div className="border-t border-white/10 bg-white/5 p-6 sm:p-8 lg:border-l lg:border-t-0">
+          <p className="text-sm font-semibold text-gold-soft">Today at a glance</p>
+          <div className="mt-5 divide-y divide-white/10 rounded-xl bg-white/8 px-4">
+            <SummaryRow icon={MailIcon} label="Unread email" value={unreadCount} />
+            <SummaryRow icon={CalendarIcon} label="Upcoming events" value={eventCount} />
           </div>
-          <OrbitNode
-            className="left-[12%] top-[24%]"
-            icon={MailIcon}
-            label="Inbox"
-            value={unreadCount}
-          />
-          <OrbitNode
-            className="bottom-[17%] right-[10%]"
-            icon={CalendarIcon}
-            label="Events"
-            value={eventCount}
-          />
-          <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between border-t border-white/10 pt-4 text-xs font-medium text-white/45">
-            <span>Live workspace signal</span>
-            <span>{unreadCount + eventCount} items in view</span>
+          <div className="mt-5 flex items-center justify-between text-xs font-medium text-white/50">
+            <span>Workspace total</span>
+            <span>{unreadCount + eventCount} items</span>
           </div>
         </div>
       </div>
@@ -139,7 +122,7 @@ function FocusLink({
   return (
     <Link
       href={href}
-      className="dashboard-focus-link group flex min-w-[13rem] items-center gap-3 rounded-xl bg-white/8 p-3 transition hover:bg-white/12"
+      className="dashboard-focus-link group flex min-w-[13rem] items-center gap-3 rounded-lg bg-white/8 p-3 transition"
     >
       <span
         className={`grid size-10 shrink-0 place-items-center rounded-lg ${
@@ -157,26 +140,22 @@ function FocusLink({
   );
 }
 
-function OrbitNode({
-  className,
+function SummaryRow({
   icon: Icon,
   label,
   value,
 }: {
-  className: string;
   icon: typeof MailIcon;
   label: string;
   value: number;
 }) {
   return (
-    <div className={`dashboard-orbit-node absolute z-10 flex items-center gap-3 rounded-xl bg-surface px-3 py-2.5 text-ink shadow-card ${className}`}>
-      <span className="grid size-8 place-items-center rounded-lg bg-surface-soft text-forest">
+    <div className="flex items-center gap-3 py-4">
+      <span className="grid size-9 place-items-center rounded-lg bg-white/10 text-gold-soft">
         <Icon className="size-4" />
       </span>
-      <div>
-        <p className="text-[0.65rem] font-medium text-muted">{label}</p>
-        <p className="text-sm font-semibold">{value}</p>
-      </div>
+      <p className="text-sm font-medium text-white/65">{label}</p>
+      <p className="ml-auto text-lg font-semibold text-white">{value}</p>
     </div>
   );
 }
@@ -192,7 +171,7 @@ export function InboxPanel({
   const [featuredThread, ...remainingThreads] = threads;
 
   return (
-    <article className="dashboard-data-panel rounded-2xl bg-surface p-5 sm:p-6">
+    <article className="dashboard-data-panel rounded-xl bg-surface p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold text-forest">
@@ -220,7 +199,7 @@ export function InboxPanel({
       >
         <div className="mt-5">
           {featuredThread ? (
-            <div className="dashboard-featured-thread rounded-xl bg-surface-soft p-4 sm:p-5">
+            <div className="dashboard-featured-thread rounded-lg bg-surface-soft p-4 sm:p-5">
               <div className="flex items-center gap-2 text-xs font-semibold text-forest">
                 <span className="size-1.5 rounded-full bg-gold" />
                 Next to review
@@ -284,7 +263,7 @@ export function CalendarPanel({
   const [nextEvent, ...laterEvents] = events;
 
   return (
-    <article className="dashboard-data-panel rounded-2xl bg-surface p-5 sm:p-6">
+    <article className="dashboard-data-panel rounded-xl bg-surface p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold text-forest">
@@ -312,17 +291,17 @@ export function CalendarPanel({
       >
         <div className="mt-5">
           {nextEvent ? (
-            <div className="dashboard-next-event overflow-hidden rounded-xl bg-forest p-4 text-white sm:p-5">
+            <div className="dashboard-next-event overflow-hidden rounded-lg bg-surface-soft p-4 sm:p-5">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold text-gold-soft">Next event</p>
-                <CalendarIcon className="size-4 text-white/45" />
+                <p className="text-xs font-semibold text-forest">Next event</p>
+                <CalendarIcon className="size-4 text-muted" />
               </div>
-              <p className="mt-5 text-lg font-semibold tracking-[-0.02em]">
+              <p className="mt-5 text-lg font-semibold tracking-[-0.02em] text-ink">
                 {nextEvent.title}
               </p>
-              <p className="mt-2 text-xs leading-5 text-white/55">{nextEvent.when}</p>
+              <p className="mt-2 text-xs leading-5 text-muted">{nextEvent.when}</p>
               {nextEvent.location ? (
-                <p className="mt-1 truncate text-xs text-white/45">
+                <p className="mt-1 truncate text-xs text-muted">
                   {nextEvent.location}
                 </p>
               ) : null}

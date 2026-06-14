@@ -2,19 +2,18 @@
 
 import { useFormStatus } from "react-dom";
 
-export function GmailSubmitButton({
+export function CalendarSubmitButton({
   children,
   pendingLabel,
   variant = "primary",
 }: {
   children: React.ReactNode;
   pendingLabel: string;
-  variant?: "primary" | "secondary" | "quiet";
+  variant?: "primary" | "quiet";
 }) {
   const { pending } = useFormStatus();
   const styles = {
     primary: "product-button-primary",
-    secondary: "product-button-secondary",
     quiet: "product-button-secondary",
   } as const;
 

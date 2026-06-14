@@ -68,7 +68,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
         action={
           <Link
             href="/dashboard/inbox/compose"
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-forest px-4 text-sm font-semibold text-white transition hover:bg-forest-hover"
+            className="product-button-primary inline-flex items-center gap-2 px-4"
           >
             <PencilIcon className="size-4" />
             Compose email
@@ -83,7 +83,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
         <div className="flex flex-col gap-2 sm:flex-row">
           <form
             action="/dashboard/inbox"
-            className="flex min-w-0 overflow-hidden rounded-xl bg-surface shadow-card sm:min-w-80"
+            className="product-input flex min-w-0 overflow-hidden sm:min-w-80"
           >
             <label className="sr-only" htmlFor="gmail-search">
               Search Gmail

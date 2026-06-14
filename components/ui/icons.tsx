@@ -48,10 +48,35 @@ export function CalendarIcon(props: IconProps) {
   );
 }
 
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m15 18-6-6 6-6" />
+    </Icon>
+  );
+}
+
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m9 18 6-6-6-6" />
+    </Icon>
+  );
+}
+
 export function CheckIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="m5 12 4 4L19 6" />
+    </Icon>
+  );
+}
+
+export function ClockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
     </Icon>
   );
 }
@@ -82,6 +107,15 @@ export function LabelIcon(props: IconProps) {
   );
 }
 
+export function LocationIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </Icon>
+  );
+}
+
 export function MailIcon(props: IconProps) {
   return (
     <Icon {...props}>
@@ -96,6 +130,14 @@ export function PencilIcon(props: IconProps) {
     <Icon {...props}>
       <path d="m4 20 4.2-1 10.4-10.4a2.1 2.1 0 0 0-3-3L5.2 16z" />
       <path d="m13.8 7.4 2.8 2.8" />
+    </Icon>
+  );
+}
+
+export function PlusIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 5v14M5 12h14" />
     </Icon>
   );
 }
@@ -156,6 +198,16 @@ export function SparklesIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4zM18 15l.7 2.3L21 18l-2.3.7L18 21l-.7-2.3L15 18l2.3-.7z" />
+    </Icon>
+  );
+}
+
+export function UsersIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+      <circle cx="9.5" cy="7" r="4" />
+      <path d="M17 11a4 4 0 0 1 4 4v2M16 3.2a4 4 0 0 1 0 7.6" />
     </Icon>
   );
 }

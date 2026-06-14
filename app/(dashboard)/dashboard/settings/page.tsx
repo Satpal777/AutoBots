@@ -40,7 +40,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {notice ? <SettingsNotice notice={notice} /> : null}
 
       <div className="mt-7 grid items-start gap-5 xl:grid-cols-[1fr_20rem]">
-        <section className="divide-y divide-line rounded-xl bg-surface shadow-card">
+        <section className="product-panel divide-y divide-line">
           {(Object.keys(googleIntegrationDetails) as GoogleIntegrationPlugin[]).map(
             (plugin) => (
               <IntegrationRow key={plugin} plugin={plugin} status={statuses[plugin]} />
@@ -48,10 +48,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           )}
         </section>
 
-        <aside className="overflow-hidden rounded-xl bg-surface-soft">
+        <aside className="product-panel-muted overflow-hidden">
           <div className="dashboard-security-visual grid min-h-44 place-items-center border-b border-line p-6">
             <div className="relative grid size-20 place-items-center rounded-full bg-forest text-white">
-              <span className="dashboard-security-orbit absolute inset-[-0.65rem] rounded-full border border-forest/20" />
+              <span className="absolute inset-[-0.65rem] rounded-full border border-forest/20" />
               <ShieldIcon className="size-8" />
               <span className="absolute -right-1 top-1 grid size-6 place-items-center rounded-full bg-gold-soft text-forest">
                 <CheckIcon className="size-3.5" />
@@ -98,7 +98,7 @@ function IntegrationRow({
   return (
     <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="flex min-w-0 items-center gap-4">
-        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface-soft text-forest">
+        <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-surface-soft text-forest">
           <Icon className="size-5" />
         </span>
         <div className="min-w-0">
@@ -165,7 +165,7 @@ function SettingsNotice({
   return (
     <div
       role="status"
-      className={`mt-5 flex items-start gap-3 rounded-xl px-4 py-3 text-sm ${
+      className={`mt-5 flex items-start gap-3 rounded-lg border border-line px-4 py-3 text-sm ${
         notice.kind === "success"
           ? "bg-success-soft text-forest"
           : "bg-gold-soft text-ink"

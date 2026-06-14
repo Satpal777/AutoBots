@@ -14,7 +14,8 @@
   --success: oklch(0.47 0.11 153);
   --success-soft: oklch(0.94 0.04 153);
   --shadow-soft: 0 24px 70px oklch(0.24 0.04 145 / 0.13);
-  --shadow-card: 0 8px 24px oklch(0.24 0.04 145 / 0.09);
+  --shadow-card: 0 1px 2px oklch(0.24 0.04 145 / 0.08);
+  --shadow-raised: 0 4px 12px oklch(0.24 0.04 145 / 0.08);
 }
 
 @theme inline {
@@ -398,111 +399,58 @@ body {
 }
 
 .dashboard-canvas {
-  background-image:
-    radial-gradient(circle at 92% 4%, oklch(0.91 0.062 82 / 0.28), transparent 22rem),
-    linear-gradient(oklch(0.35 0.076 151 / 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.35 0.076 151 / 0.025) 1px, transparent 1px);
-  background-size:
-    auto,
-    32px 32px,
-    32px 32px;
+  background: var(--canvas);
 }
 
 .dashboard-rail {
-  background-image:
-    radial-gradient(circle at 10% 0%, oklch(0.69 0.105 78 / 0.17), transparent 15rem),
-    linear-gradient(to bottom, transparent 68%, oklch(0.225 0.04 151 / 0.22));
-  box-shadow: 0 8px 24px oklch(0.24 0.04 145 / 0.13);
+  background: var(--surface);
 }
 
 .dashboard-nav-active {
-  position: relative;
-}
-
-.dashboard-nav-active::after {
-  position: absolute;
-  right: 0.65rem;
-  width: 0.35rem;
-  height: 0.35rem;
-  border-radius: 999px;
-  background: var(--gold-soft);
-  content: "";
-  box-shadow: 0 0 0 4px oklch(0.91 0.062 82 / 0.12);
+  background: var(--surface-soft);
+  color: var(--forest);
 }
 
 .dashboard-focus {
-  box-shadow: 0 24px 70px oklch(0.24 0.04 145 / 0.13);
-}
-
-.dashboard-focus-map {
-  background-image:
-    radial-gradient(circle at center, oklch(0.69 0.105 78 / 0.16), transparent 11rem),
-    linear-gradient(oklch(0.992 0.006 88 / 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.992 0.006 88 / 0.035) 1px, transparent 1px);
-  background-size:
-    auto,
-    26px 26px,
-    26px 26px;
+  box-shadow: var(--shadow-raised);
 }
 
 .dashboard-focus-link,
 .dashboard-data-panel {
   transition:
-    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 180ms ease-out;
+    background-color 180ms ease-out,
+    border-color 180ms ease-out;
 }
 
 .dashboard-focus-link:hover {
-  transform: translateY(-2px);
+  background: oklch(1 0 0 / 0.12);
 }
 
 .dashboard-data-panel {
-  box-shadow: 0 8px 24px oklch(0.24 0.04 145 / 0.07);
+  border: 1px solid var(--line);
+  box-shadow: none;
 }
 
 .dashboard-data-panel:hover {
-  box-shadow: 0 12px 28px oklch(0.24 0.04 145 / 0.1);
-}
-
-.dashboard-orbit {
-  animation: dashboard-orbit-breathe 5s ease-in-out infinite;
-}
-
-.dashboard-orbit-inner {
-  animation-delay: -1.8s;
-}
-
-.dashboard-orbit-node {
-  animation: dashboard-node-settle 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.dashboard-orbit-node:nth-of-type(5) {
-  animation-delay: 90ms;
+  border-color: oklch(0.78 0.03 120);
 }
 
 .dashboard-featured-thread,
 .dashboard-next-event {
-  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background-color 180ms ease-out;
 }
 
 .dashboard-featured-thread:hover,
 .dashboard-next-event:hover {
-  transform: translateY(-2px);
-}
-
-.dashboard-status-ring {
-  border: 1px solid oklch(0.91 0.062 82 / 0.65);
-  animation: dashboard-status-pulse 2.8s ease-out infinite;
+  background: var(--gold-soft);
 }
 
 .dashboard-list-row {
-  transition:
-    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 160ms ease-out;
+  transition: background-color 160ms ease-out;
 }
 
 .dashboard-list-row:hover {
-  transform: translateX(3px);
+  background: var(--surface-soft);
 }
 
 .dashboard-security-visual {
@@ -516,41 +464,128 @@ body {
     20px 20px;
 }
 
-.dashboard-security-orbit {
-  animation: dashboard-security-orbit 8s linear infinite;
+.product-panel {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  box-shadow: none;
 }
 
-@keyframes dashboard-node-settle {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.97);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.product-panel-muted {
+  border-radius: 0.75rem;
+  background: var(--surface-soft);
 }
 
-@keyframes dashboard-orbit-breathe {
-  50% {
-    opacity: 0.55;
-    transform: scale(1.025);
-  }
+.product-input {
+  min-height: 2.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+  transition:
+    border-color 160ms ease-out,
+    box-shadow 160ms ease-out;
 }
 
-@keyframes dashboard-status-pulse {
-  60%,
-  100% {
-    opacity: 0;
-    transform: scale(1.45);
-  }
+.product-input:focus {
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px oklch(0.35 0.076 151 / 0.12);
+  outline: none;
 }
 
-@keyframes dashboard-security-orbit {
-  to {
-    transform: rotate(360deg);
-  }
+.product-input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.product-button-primary,
+.product-button-secondary,
+.product-icon-button {
+  min-height: 2.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.product-button-primary {
+  background: var(--forest);
+  color: white;
+}
+
+.product-button-primary:hover {
+  background: var(--forest-hover);
+}
+
+.product-button-secondary,
+.product-icon-button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.product-button-secondary:hover,
+.product-icon-button:hover {
+  border-color: oklch(0.72 0.04 130);
+  background: var(--surface-soft);
+}
+
+.product-button-primary:active,
+.product-button-secondary:active,
+.product-icon-button:active {
+  transform: translateY(1px);
+}
+
+.product-button-primary:disabled,
+.product-button-secondary:disabled,
+.product-icon-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.product-tab-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  padding: 0.25rem;
+}
+
+.product-tab {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  border-radius: 0.5rem;
+  padding-inline: 0.875rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out,
+    box-shadow 160ms ease-out;
+}
+
+.product-tab:hover {
+  color: var(--forest);
+}
+
+.product-tab[aria-current="page"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+
+.product-notice {
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--forest);
 }
 
 @media (min-width: 640px) {
@@ -607,11 +642,7 @@ body {
   .hero-signal,
   .hero-route-dot,
   .motion-reveal,
-  .motion-showcase,
-  .dashboard-orbit,
-  .dashboard-orbit-node,
-  .dashboard-status-ring,
-  .dashboard-security-orbit {
+  .motion-showcase {
     animation: none !important;
     filter: none !important;
     opacity: 1 !important;

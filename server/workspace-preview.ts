@@ -4,6 +4,7 @@ import type {
   GoogleIntegrationStatus,
   GoogleIntegrationStatuses,
 } from "./google-integrations";
+import { getCalendarAgenda } from "./calendar";
 import { getCorsairTenant } from "./corsair-tenant";
 
 export type GmailPreview = {
@@ -67,7 +68,7 @@ export async function getWorkspacePreview(
           threads: [],
         }),
     statuses.googlecalendar === "connected"
-      ? getCalendarPreview(tenant)
+      ? getCalendarPreview()
       : Promise.resolve<CalendarPreview>({
           status:
             statuses.googlecalendar === "error" ? "error" : "disconnected",
@@ -102,7 +103,7 @@ export async function getCalendarWorkspacePreview(
     };
   }
 
-  return getCalendarPreview(await getCorsairTenant());
+  return getCalendarPreview();
 }
 
 async function getGmailPreview(
@@ -172,33 +173,25 @@ async function getGmailThreadPreview(
   };
 }
 
-async function getCalendarPreview(
-  tenant: Awaited<ReturnType<typeof getCorsairTenant>>,
-): Promise<CalendarPreview> {
+async function getCalendarPreview(): Promise<CalendarPreview> {
   try {
-    const now = new Date();
-    const end = new Date(now);
-    end.setDate(end.getDate() + 7);
-
-    const result = await tenant.googlecalendar.api.events.getMany({
-      calendarId: "primary",
-      timeMin: now.toISOString(),
-      timeMax: end.toISOString(),
-      singleEvents: true,
-      orderBy: "startTime",
-      maxResults: 8,
-    });
+    const agenda = await getCalendarAgenda({ days: 7 });
 
     return {
       status: "ready",
-      events: (result.items ?? [])
-        .filter((event): event is typeof event & { id: string } =>
-          Boolean(event.id),
-        )
+      events: agenda.events
+        .slice(0, 8)
         .map((event) => ({
           id: event.id,
-          title: firstNonEmpty(event.summary),
-          when: formatEventTime(event.start),
+          title: event.title,
+          when: formatEventTime(
+            event.startDate
+              ? { date: event.startDate }
+              : {
+                  dateTime: event.startAt ?? undefined,
+                  timeZone: agenda.timeZone,
+                },
+          ),
           ...(event.location ? { location: event.location } : {}),
         })),
     };

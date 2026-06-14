@@ -29,18 +29,18 @@ import { GmailSubmitButton } from "./gmail-submit-button";
 
 export function GmailSectionNav({ active }: { active: "inbox" | "drafts" }) {
   return (
-    <nav aria-label="Gmail sections" className="flex flex-wrap gap-2">
+    <nav aria-label="Gmail sections" className="product-tab-list">
       <Link
         href="/dashboard/inbox"
         aria-current={active === "inbox" ? "page" : undefined}
-        className={getNavClass(active === "inbox")}
+        className="product-tab"
       >
         Inbox
       </Link>
       <Link
         href="/dashboard/inbox/drafts"
         aria-current={active === "drafts" ? "page" : undefined}
-        className={getNavClass(active === "drafts")}
+        className="product-tab"
       >
         Drafts
       </Link>
@@ -66,7 +66,7 @@ export function GmailNotice({ status }: { status?: string }) {
   return message ? (
     <div
       role="status"
-      className="mt-5 rounded-xl bg-surface-soft px-4 py-3 text-sm font-medium text-forest"
+      className="product-notice mt-5 px-4 py-3 text-sm font-medium"
     >
       {message}
     </div>
@@ -75,8 +75,8 @@ export function GmailNotice({ status }: { status?: string }) {
 
 export function GmailDisconnectedState() {
   return (
-    <div className="mt-8 max-w-3xl rounded-2xl bg-surface p-6 shadow-card sm:p-8">
-      <span className="grid size-11 place-items-center rounded-xl bg-surface-soft text-forest">
+    <div className="product-panel mt-8 max-w-3xl p-6 sm:p-8">
+      <span className="grid size-11 place-items-center rounded-lg bg-surface-soft text-forest">
         <MailIcon className="size-5" />
       </span>
       <h2 className="mt-5 text-xl font-semibold text-ink">Connect Gmail first</h2>
@@ -86,7 +86,7 @@ export function GmailDisconnectedState() {
       </p>
       <Link
         href="/dashboard/settings"
-        className="mt-5 inline-flex min-h-10 items-center rounded-xl bg-forest px-4 text-sm font-semibold text-white transition hover:bg-forest-hover"
+        className="product-button-primary mt-5 inline-flex items-center px-4"
       >
         Open connected apps
       </Link>
@@ -103,7 +103,7 @@ export function GmailThreadList({
 }) {
   if (threads.length === 0) {
     return (
-      <div className="mt-8 rounded-2xl bg-surface p-8 text-center shadow-card">
+      <div className="product-panel mt-8 p-8 text-center">
         <p className="text-sm font-semibold text-ink">
           {query ? "No Gmail results" : "Your inbox is clear"}
         </p>
@@ -117,7 +117,7 @@ export function GmailThreadList({
   }
 
   return (
-    <section className="mt-8 overflow-hidden rounded-2xl bg-surface shadow-card">
+    <section className="product-panel mt-8 overflow-hidden">
       {threads.map((thread) => (
         <Link
           key={thread.id}
@@ -202,7 +202,7 @@ export function GmailThreadView({
               id="gmail-label"
               name="labelId"
               required
-              className="min-h-10 rounded-xl bg-surface px-3 text-sm font-medium text-ink shadow-card"
+              className="product-input px-3 text-sm font-medium"
             >
               <option value="">Choose label</option>
               {labels.map((label) => (
@@ -221,7 +221,7 @@ export function GmailThreadView({
 
       <section className="mt-6 space-y-4">
         {thread.messages.map((message) => (
-          <article key={message.id} className="rounded-2xl bg-surface p-5 shadow-card sm:p-6">
+          <article key={message.id} className="product-panel p-5 sm:p-6">
             <div className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-ink">
@@ -243,7 +243,7 @@ export function GmailThreadView({
       </section>
 
       {thread.replyTo ? (
-        <section className="mt-6 rounded-2xl bg-surface-soft p-5 sm:p-6">
+        <section className="product-panel-muted mt-6 p-5 sm:p-6">
           <div className="flex items-center gap-2 text-sm font-semibold text-forest">
             <ReplyIcon className="size-4" />
             Reply
@@ -264,7 +264,7 @@ export function GmailThreadView({
               name="body"
               required
               rows={6}
-              className="w-full resize-y rounded-xl bg-surface px-4 py-3 text-sm leading-6 text-ink shadow-card"
+              className="product-input w-full resize-y px-4 py-3 text-sm leading-6"
               placeholder={`Reply to ${thread.replyTo}`}
             />
             <div className="mt-3 flex justify-end">
@@ -282,7 +282,7 @@ export function GmailThreadView({
 
 export function GmailComposeForm({ draft }: { draft?: GmailDraftSummary | null }) {
   return (
-    <form className="mt-8 max-w-4xl rounded-2xl bg-surface p-5 shadow-card sm:p-7">
+    <form className="product-panel mt-8 max-w-4xl p-5 sm:p-7">
       {draft ? <input type="hidden" name="draftId" value={draft.id} /> : null}
       <div className="grid gap-5">
         <label className="grid gap-2 text-sm font-semibold text-ink">
@@ -293,7 +293,7 @@ export function GmailComposeForm({ draft }: { draft?: GmailDraftSummary | null }
             required
             defaultValue={draft?.to ?? ""}
             placeholder="person@example.com"
-            className="min-h-11 rounded-xl bg-canvas px-4 text-sm font-normal shadow-card"
+            className="product-input px-4 text-sm font-normal"
           />
         </label>
         <label className="grid gap-2 text-sm font-semibold text-ink">
@@ -302,7 +302,7 @@ export function GmailComposeForm({ draft }: { draft?: GmailDraftSummary | null }
             type="text"
             name="subject"
             defaultValue={draft?.subject ?? ""}
-            className="min-h-11 rounded-xl bg-canvas px-4 text-sm font-normal shadow-card"
+            className="product-input px-4 text-sm font-normal"
           />
         </label>
         <label className="grid gap-2 text-sm font-semibold text-ink">
@@ -312,21 +312,21 @@ export function GmailComposeForm({ draft }: { draft?: GmailDraftSummary | null }
             required
             rows={14}
             defaultValue={draft?.body ?? ""}
-            className="resize-y rounded-xl bg-canvas px-4 py-3 text-sm font-normal leading-7 shadow-card"
+            className="product-input resize-y px-4 py-3 text-sm font-normal leading-7"
           />
         </label>
       </div>
       <div className="mt-5 flex flex-wrap justify-end gap-2">
         <button
           formAction={saveGmailDraftAction}
-          className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-surface-soft px-4 text-sm font-semibold text-forest transition hover:bg-gold-soft"
+          className="product-button-secondary inline-flex items-center gap-2 px-4"
         >
           <PencilIcon className="size-4" />
           Save draft
         </button>
         <button
           formAction={sendGmailMessageAction}
-          className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-forest px-4 text-sm font-semibold text-white transition hover:bg-forest-hover"
+          className="product-button-primary inline-flex items-center gap-2 px-4"
         >
           <SendIcon className="size-4" />
           Send email
@@ -339,11 +339,11 @@ export function GmailComposeForm({ draft }: { draft?: GmailDraftSummary | null }
 export function GmailDraftList({ drafts }: { drafts: GmailDraftSummary[] }) {
   if (drafts.length === 0) {
     return (
-      <div className="mt-8 rounded-2xl bg-surface p-8 text-center shadow-card">
+      <div className="product-panel mt-8 p-8 text-center">
         <p className="text-sm font-semibold text-ink">No drafts waiting</p>
         <Link
           href="/dashboard/inbox/compose"
-          className="mt-4 inline-flex min-h-10 items-center rounded-xl bg-forest px-4 text-sm font-semibold text-white"
+          className="product-button-primary mt-4 inline-flex items-center px-4"
         >
           Compose email
         </Link>
@@ -352,7 +352,7 @@ export function GmailDraftList({ drafts }: { drafts: GmailDraftSummary[] }) {
   }
 
   return (
-    <section className="mt-8 divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-card">
+    <section className="product-panel mt-8 divide-y divide-line overflow-hidden">
       {drafts.map((draft) => (
         <article key={draft.id} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
@@ -369,7 +369,7 @@ export function GmailDraftList({ drafts }: { drafts: GmailDraftSummary[] }) {
           <div className="flex gap-2">
             <Link
               href={`/dashboard/inbox/compose?draftId=${encodeURIComponent(draft.id)}`}
-              className="inline-flex min-h-10 items-center rounded-xl bg-surface-soft px-4 text-sm font-semibold text-forest"
+              className="product-button-secondary inline-flex items-center px-4"
             >
               Edit
             </Link>
@@ -385,14 +385,6 @@ export function GmailDraftList({ drafts }: { drafts: GmailDraftSummary[] }) {
       ))}
     </section>
   );
-}
-
-function getNavClass(active: boolean): string {
-  return `inline-flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition ${
-    active
-      ? "bg-forest text-white"
-      : "bg-surface-soft text-forest hover:bg-gold-soft"
-  }`;
 }
 
 function formatMailboxDate(value: string | null): string {
