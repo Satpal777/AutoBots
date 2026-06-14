@@ -5,14 +5,17 @@ import { usePathname } from "next/navigation";
 
 import { AutobotLogo } from "@/components/brand/autobot-logo";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import {
   CalendarIcon,
   CommandIcon,
   MailIcon,
   SettingsIcon,
+  SparklesIcon,
 } from "@/components/ui/icons";
 
 const navigation = [
+  { href: "/dashboard/chat", label: "Autobot Chat", icon: SparklesIcon },
   { href: "/dashboard", label: "Today", icon: CommandIcon },
   { href: "/dashboard/inbox", label: "Inbox", icon: MailIcon },
   { href: "/dashboard/calendar", label: "Calendar", icon: CalendarIcon },
@@ -28,8 +31,15 @@ export function DashboardShell({
   email: string;
   name: string;
 }) {
+  const pathname = usePathname();
+  const isChat = pathname.startsWith("/dashboard/chat");
+
   return (
-    <div className="dashboard-canvas min-h-screen bg-canvas text-ink">
+    <div
+      className={`dashboard-canvas bg-canvas text-ink ${
+        isChat ? "min-h-screen lg:h-screen lg:overflow-hidden" : "min-h-screen"
+      }`}
+    >
       <aside className="dashboard-rail fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-line lg:block">
         <div className="flex h-full flex-col p-4">
           <div className="px-2 py-2">
@@ -39,6 +49,10 @@ export function DashboardShell({
           <DashboardNavigation />
 
           <div className="mt-auto border-t border-line pt-3">
+            <div className="mb-2 flex items-center justify-between rounded-lg px-2 py-1">
+              <span className="text-xs font-semibold text-muted">Appearance</span>
+              <ThemeToggle />
+            </div>
             <div className="mb-2 flex items-center gap-3 rounded-lg p-2">
               <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gold-soft text-xs font-bold text-forest">
                 {getInitials(name)}
@@ -56,13 +70,26 @@ export function DashboardShell({
       <header className="sticky top-0 z-30 border-b border-line bg-surface lg:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <AutobotLogo />
-          <SignOutButton />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <SignOutButton />
+          </div>
         </div>
         <DashboardNavigation mobile />
       </header>
 
-      <main className="min-w-0 lg:pl-60">
-        <div className="mx-auto max-w-[80rem] px-5 py-7 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+      <main
+        className={`min-w-0 lg:pl-60 ${
+          isChat ? "lg:h-screen lg:overflow-hidden" : ""
+        }`}
+      >
+        <div
+          className={
+            isChat
+              ? "mx-auto max-w-[96rem] px-3 py-3 sm:px-5 sm:py-5 lg:h-full lg:px-6 lg:py-6"
+              : "mx-auto max-w-[80rem] px-5 py-7 sm:px-8 sm:py-10 lg:px-10 lg:py-12"
+          }
+        >
           {children}
         </div>
       </main>

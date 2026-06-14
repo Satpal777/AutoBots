@@ -12,6 +12,7 @@ const env = getServerEnv();
 export const auth = betterAuth({
   appName: "Autobot",
   baseURL: env.BETTER_AUTH_URL,
+  trustedOrigins: [...new Set([env.APP_URL, env.BETTER_AUTH_URL])],
   secret: env.BETTER_AUTH_SECRET,
   database: drizzleAdapter(getDb(), {
     provider: "pg",

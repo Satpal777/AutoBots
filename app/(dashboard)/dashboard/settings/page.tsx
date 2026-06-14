@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { IntegrationActionButton } from "@/components/integrations/integration-action-button";
 import { PageHeader } from "@/components/dashboard/workspace-panels";
 import {
@@ -35,6 +37,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         label="Settings"
         title="Connected apps"
         description="Choose which Google apps Autobot can use for your workspace."
+        action={
+          <Link href="/dashboard/settings/ai" className="product-button-secondary inline-flex items-center px-4">
+            AI settings
+          </Link>
+        }
       />
 
       {notice ? <SettingsNotice notice={notice} /> : null}

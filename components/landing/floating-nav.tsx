@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { AutobotLogo } from "@/components/brand/autobot-logo";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { ArrowRightIcon } from "@/components/ui/icons";
 
 export function FloatingNav() {
@@ -50,10 +51,13 @@ export function FloatingNav() {
             Security
           </a>
         </div>
-        <Link href="/sign-in" className="nav-action">
-          Sign in
-          <ArrowRightIcon className="size-4" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Link href="/sign-in" className="nav-action">
+            Sign in
+            <ArrowRightIcon className="size-4" />
+          </Link>
+        </div>
       </nav>
     </header>
   );

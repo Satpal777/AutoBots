@@ -29,7 +29,7 @@ export function GoogleSignInButton() {
         type="button"
         onClick={signIn}
         disabled={isPending}
-        className="rounded-lg bg-zinc-950 px-5 py-3 font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="product-button-primary px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPending ? "Opening Google..." : "Continue with Google"}
       </button>
