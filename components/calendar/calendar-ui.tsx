@@ -180,8 +180,8 @@ export function CalendarWeekView({ agenda }: { agenda: CalendarAgenda }) {
   const days = getDateKeysInRange(agenda.rangeStart, agenda.rangeEnd, agenda.timeZone);
 
   return (
-    <section className="mt-8 overflow-x-auto pb-3">
-      <div className="product-panel grid min-w-[68rem] grid-cols-7 overflow-hidden">
+    <section className="calendar-week-scroller mt-8 overflow-x-auto pb-3">
+      <div className="calendar-week-grid product-panel grid min-w-[68rem] grid-cols-7 overflow-hidden">
         {days.map((dateKey) => {
           const events = grouped.get(dateKey) ?? [];
 

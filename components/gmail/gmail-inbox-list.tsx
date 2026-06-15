@@ -59,17 +59,17 @@ export function GmailInboxList({ initialThreads, initialNextPageToken, query, by
   return (
     <section className="product-panel mt-6 overflow-hidden">
       {threads.map((thread) => (
-        <article key={thread.id} className="group grid gap-2 border-b border-line px-4 py-3 last:border-b-0 hover:bg-surface-soft/60 sm:grid-cols-[minmax(8rem,0.55fr)_minmax(0,1.5fr)_auto] sm:items-center">
-          <Link href={`/dashboard/inbox/thread/${encodeURIComponent(thread.id)}`} className="flex min-w-0 items-center gap-2">
+        <article key={thread.id} className="gmail-inbox-row group grid gap-2 border-b border-line px-4 py-3 last:border-b-0 hover:bg-surface-soft/60 sm:grid-cols-[minmax(8rem,0.55fr)_minmax(0,1.5fr)_auto] sm:items-center">
+          <Link href={`/dashboard/inbox/thread/${encodeURIComponent(thread.id)}`} className="gmail-inbox-sender flex min-w-0 items-center gap-2">
             <span className={`size-2 shrink-0 rounded-full ${thread.unread ? "bg-gold" : "bg-line"}`} />
             <span className={`truncate text-sm ${thread.unread ? "font-semibold text-ink" : "font-medium text-muted"}`}>{thread.from ?? "Sender unavailable"}</span>
           </Link>
-          <Link href={`/dashboard/inbox/thread/${encodeURIComponent(thread.id)}`} className="min-w-0">
+          <Link href={`/dashboard/inbox/thread/${encodeURIComponent(thread.id)}`} className="gmail-inbox-content min-w-0">
             <span className="block truncate text-sm font-semibold text-ink">{thread.subject ?? "No subject"}</span>
             <p className="mt-0.5 truncate text-xs text-muted">{thread.intelligenceSummary ?? thread.snippet ?? "Preview unavailable"}</p>
             <EmailSignals thread={thread} />
           </Link>
-          <div className="flex items-center justify-between gap-1 sm:justify-end">
+          <div className="gmail-inbox-actions flex items-center justify-between gap-1 sm:justify-end">
             <time className="mr-1 text-xs font-medium text-muted">{formatMailboxDate(thread.receivedAt)}</time>
             <PriorityAction thread={thread} />
             <InlineAction action={correctInboxIntelligenceAction} label={thread.needsFollowUp ? "Clear follow-up" : "Mark follow-up"}>

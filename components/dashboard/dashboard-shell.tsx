@@ -104,15 +104,14 @@ export function DashboardShell({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-30 border-b border-line bg-surface lg:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
+      <header className="dashboard-mobile-header sticky top-0 z-30 border-b border-line bg-surface lg:hidden">
+        <div className="flex items-center justify-between px-4 py-2.5">
           <AutobotLogo />
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <SignOutButton />
+            <SignOutButton compact />
           </div>
         </div>
-        <DashboardNavigation mobile />
       </header>
 
       <main
@@ -125,13 +124,14 @@ export function DashboardShell({
         <div
           className={
             isChat
-              ? "mx-auto max-w-[96rem] px-3 py-3 sm:px-5 sm:py-5 lg:h-full lg:px-6 lg:py-6"
-              : "mx-auto max-w-[80rem] px-5 py-7 sm:px-8 sm:py-10 lg:px-10 lg:py-12"
+              ? "dashboard-mobile-chat-content mx-auto max-w-[96rem] px-3 py-3 sm:px-5 sm:py-5 lg:h-full lg:px-6 lg:py-6"
+              : "dashboard-mobile-content mx-auto max-w-[80rem] px-5 py-7 sm:px-8 sm:py-10 sm:pb-28 lg:px-10 lg:py-12 lg:pb-12"
           }
         >
           {children}
         </div>
       </main>
+      <DashboardNavigation mobile />
       <CommandPalette />
     </div>
   );
@@ -151,7 +151,7 @@ function DashboardNavigation({
       aria-label="Dashboard navigation"
       className={
         mobile
-          ? "flex overflow-x-auto px-3 pb-2"
+          ? "dashboard-mobile-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-surface px-2 py-2 lg:hidden"
           : "mt-6 space-y-1 text-sm"
       }
     >
@@ -168,9 +168,9 @@ function DashboardNavigation({
             title={collapsed ? label : undefined}
             className={
               mobile
-                ? `flex min-w-fit items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                ? `dashboard-mobile-nav-link flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[0.65rem] font-semibold transition ${
                     active
-                      ? "bg-surface-soft text-forest"
+                      ? "text-forest"
                       : "text-muted hover:text-forest"
                   }`
                 : `flex items-center rounded-xl py-3 font-semibold transition ${
@@ -182,7 +182,7 @@ function DashboardNavigation({
                   }`
             }
           >
-            <Icon className={`size-4 ${active && !mobile ? "text-forest" : ""}`} />
+            <Icon className={`${mobile ? "size-5" : "size-4"} ${active && !mobile ? "text-forest" : ""}`} />
             {collapsed ? null : label}
           </Link>
         );

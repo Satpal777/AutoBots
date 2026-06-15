@@ -23,7 +23,7 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <header className="dashboard-page-header flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <div className="text-sm font-medium text-muted">{label}</div>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
@@ -31,7 +31,7 @@ export function PageHeader({
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-6 text-muted">{description}</p>
       </div>
-      {action}
+      {action ? <div className="dashboard-page-action">{action}</div> : null}
     </header>
   );
 }

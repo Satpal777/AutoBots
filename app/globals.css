@@ -611,6 +611,221 @@ body {
   background: var(--surface-soft);
 }
 
+@media (max-width: 639px) {
+  html {
+    scroll-padding-top: calc(4rem + env(safe-area-inset-top));
+  }
+
+  .dashboard-mobile-header {
+    padding-top: env(safe-area-inset-top);
+    background: color-mix(in oklch, var(--surface) 96%, transparent);
+  }
+
+  .dashboard-mobile-header button {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  .dashboard-mobile-nav {
+    min-height: calc(4.25rem + env(safe-area-inset-bottom));
+    padding: 0.35rem 0.35rem max(0.35rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -3px 8px oklch(0.24 0.04 145 / 0.08);
+  }
+
+  .dashboard-mobile-nav-link {
+    position: relative;
+    min-height: 3.5rem;
+    border-radius: 0.625rem;
+  }
+
+  .dashboard-mobile-nav-link[aria-current="page"] {
+    background: var(--surface-soft);
+  }
+
+  .dashboard-mobile-content {
+    padding: 1.25rem 1rem calc(5.75rem + env(safe-area-inset-bottom));
+  }
+
+  .dashboard-mobile-chat-content {
+    padding: 0;
+  }
+
+  .dashboard-page-header {
+    gap: 0.875rem;
+  }
+
+  .dashboard-page-header h1 {
+    margin-top: 0.25rem;
+    font-size: 1.5rem;
+    line-height: 1.9rem;
+    letter-spacing: -0.025em;
+  }
+
+  .dashboard-page-header p {
+    margin-top: 0.375rem;
+    line-height: 1.35rem;
+  }
+
+  .dashboard-page-action {
+    display: flex;
+    width: 100%;
+  }
+
+  .dashboard-page-action > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dashboard-mobile-content .product-panel,
+  .dashboard-mobile-content .product-panel-muted,
+  .dashboard-mobile-content .dashboard-data-panel,
+  .dashboard-mobile-content .dashboard-focus,
+  .dashboard-mobile-content .gmail-conversation {
+    margin-inline: -1rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .dashboard-mobile-content .dashboard-data-panel:hover {
+    border-color: var(--line);
+  }
+
+  .dashboard-mobile-content .product-tab-list {
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .dashboard-mobile-content .product-tab {
+    min-height: 2.75rem;
+    white-space: nowrap;
+  }
+
+  .dashboard-mobile-content input,
+  .dashboard-mobile-content select,
+  .dashboard-mobile-content textarea,
+  .dashboard-mobile-chat-content textarea {
+    font-size: 1rem;
+  }
+
+  .dashboard-mobile-content .dashboard-security-visual {
+    display: none;
+  }
+
+  .settings-integration-action,
+  .settings-integration-action > button {
+    width: 100%;
+  }
+
+  .gmail-inbox-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem 0.75rem;
+    padding-block: 1rem;
+  }
+
+  .gmail-inbox-sender {
+    grid-column: 1;
+  }
+
+  .gmail-inbox-content,
+  .gmail-inbox-actions {
+    grid-column: 1 / -1;
+  }
+
+  .gmail-inbox-actions {
+    margin-top: 0.25rem;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 0.1rem;
+  }
+
+  .gmail-inbox-actions time {
+    margin-right: auto;
+  }
+
+  .gmail-inbox-actions .product-icon-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .calendar-week-scroller {
+    margin-inline: -1rem;
+    scroll-padding-inline: 1rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .dashboard-mobile-content .calendar-week-grid {
+    display: flex;
+    min-width: max-content;
+    margin-inline: 0;
+    border-right: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+    border-radius: 0.75rem;
+    overflow: visible;
+  }
+
+  .calendar-week-grid > div {
+    width: calc(100vw - 2rem);
+    min-height: 24rem;
+    scroll-snap-align: start;
+  }
+
+  .chat-workspace-grid {
+    min-height: calc(100svh - 8rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    gap: 0;
+  }
+
+  .chat-workspace-card {
+    height: calc(100svh - 8rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: 0;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .chat-workspace-card > header {
+    padding-inline: 1rem;
+  }
+
+  .chat-workspace-card .chat-scroll-area {
+    padding: 1rem;
+  }
+
+  .chat-history-panel {
+    margin-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .chat-workspace-grid {
+    min-height: calc(100svh - 9.5rem);
+    height: calc(100svh - 9.5rem);
+  }
+
+  .chat-workspace-card {
+    height: calc(100svh - 9.5rem);
+  }
+
+  .chat-history-panel {
+    margin-bottom: 5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .product-button-primary,
+  .product-button-secondary,
+  .product-icon-button,
+  .theme-toggle {
+    min-height: 2.75rem;
+  }
+}
+
 .gmail-timeline {
   position: relative;
   padding: 1.25rem;

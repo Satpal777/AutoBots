@@ -368,12 +368,13 @@ export function ChatWorkspace({
 
   return (
     <div className={cn(
+      "chat-workspace-grid",
       "grid min-h-[calc(100svh-8.5rem)] gap-3 md:h-[calc(100svh-8.5rem)] md:min-h-0 md:overflow-hidden lg:h-full",
       historyOpen
         ? "md:grid-cols-[minmax(0,1fr)_15rem] lg:grid-cols-[minmax(0,1fr)_17rem]"
         : "md:grid-cols-1",
     )}>
-      <Card className="flex h-[calc(100svh-8.5rem)] min-h-[30rem] min-w-0 flex-col overflow-hidden md:h-auto md:min-h-0">
+      <Card className="chat-workspace-card flex h-[calc(100svh-8.5rem)] min-h-[30rem] min-w-0 flex-col overflow-hidden md:h-auto md:min-h-0">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-ink">{conversations.find((item) => item.id === activeId)?.title ?? "Autobot Chat"}</p>
@@ -467,7 +468,7 @@ export function ChatWorkspace({
         </div>
       </Card>
 
-      {historyOpen ? <Card className="flex min-h-0 flex-col overflow-hidden p-3 md:h-full">
+      {historyOpen ? <Card className="chat-history-panel flex min-h-0 flex-col overflow-hidden p-3 md:h-full">
         <div className="flex shrink-0 items-center justify-between gap-3 px-1 pb-3">
           <div>
             <p className="text-sm font-semibold text-ink">Conversations</p>

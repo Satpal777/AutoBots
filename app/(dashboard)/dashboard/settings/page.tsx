@@ -151,6 +151,7 @@ function IntegrationRow({
       </div>
 
       <form
+        className="settings-integration-action"
         action={
           connected
             ? disconnectGoogleIntegrationAction
