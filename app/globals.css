@@ -1237,6 +1237,154 @@ body {
   color: var(--forest);
 }
 
+.legal-hero {
+  background:
+    radial-gradient(circle at 82% 12%, oklch(0.69 0.105 78 / 0.25), transparent 21rem),
+    radial-gradient(circle at 12% 100%, oklch(0.5 0.08 151 / 0.42), transparent 28rem),
+    var(--forest-solid);
+}
+
+.legal-header-link,
+.legal-sign-in {
+  min-height: 2.5rem;
+  align-items: center;
+  border-radius: 0.5rem;
+  padding-inline: 0.75rem;
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.legal-header-link {
+  color: var(--muted);
+}
+
+.legal-header-link:hover {
+  background: var(--surface-soft);
+  color: var(--forest);
+}
+
+.legal-sign-in {
+  margin-left: 0.25rem;
+  background: var(--forest-solid);
+  color: white;
+}
+
+.legal-sign-in:hover {
+  background: var(--forest-solid-hover);
+}
+
+.legal-mobile-toc {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  padding: 0.85rem 1rem;
+}
+
+.legal-mobile-toc summary {
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.legal-toc-link {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2rem;
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.legal-toc-link span {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.legal-toc-link:hover {
+  background: var(--surface-soft);
+  color: var(--forest);
+}
+
+.legal-review-note {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface-soft);
+  padding: 1rem 1.1rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+.legal-review-note strong {
+  color: var(--ink);
+}
+
+.legal-prose {
+  max-width: 72ch;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.8;
+}
+
+.legal-prose h2 {
+  margin-bottom: 1rem;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 4vw, 2.1rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.legal-prose p {
+  text-wrap: pretty;
+}
+
+.legal-prose p + p,
+.legal-prose ul + p,
+.legal-prose p + ul {
+  margin-top: 1rem;
+}
+
+.legal-prose ul {
+  display: grid;
+  gap: 0.65rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.legal-prose li::marker {
+  color: var(--gold);
+}
+
+.legal-prose strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.legal-prose a {
+  color: var(--forest);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--gold) 70%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.legal-prose a:hover {
+  color: var(--forest-hover);
+  text-decoration-color: currentColor;
+}
+
 @media (min-width: 640px) {
   .site-shell {
     width: min(100% - 4rem, 80rem);

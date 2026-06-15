@@ -89,7 +89,6 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       <div className="mt-7 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <GmailSectionNav active="inbox" />
-          <p className="mt-2 text-xs font-medium text-muted">New mail is checked and organized automatically while this inbox is open.</p>
         </div>
         <div className="flex items-center gap-2">
           <InboxSearch query={query} />

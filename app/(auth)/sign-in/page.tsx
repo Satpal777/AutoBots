@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -28,6 +29,17 @@ export default async function SignInPage() {
         <div className="mt-7">
           <GoogleSignInButton />
         </div>
+        <p className="mt-5 text-xs leading-5 text-muted">
+          By continuing, you agree to the{" "}
+          <Link className="font-semibold text-forest hover:text-forest-hover" href="/tnc">
+            Terms and Conditions
+          </Link>{" "}
+          and acknowledge the{" "}
+          <Link className="font-semibold text-forest hover:text-forest-hover" href="/privacy">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </section>
     </main>
   );

@@ -100,6 +100,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
 function SpotifyIntegrationRow({ status }: { status: SpotifyIntegrationStatus }) {
   const connected = status === "connected";
+  const description = status === "error"
+    ? "Spotify could not verify API access. In Development Mode, use a Premium app-owner account, add this user in Spotify Users Management, then reconnect."
+    : spotifyIntegrationDetails.description;
 
   return (
     <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -112,7 +115,7 @@ function SpotifyIntegrationRow({ status }: { status: SpotifyIntegrationStatus })
             <h2 className="text-sm font-semibold text-ink">{spotifyIntegrationDetails.name}</h2>
             <ConnectionStatus status={status} />
           </div>
-          <p className="mt-1 text-sm text-muted">{spotifyIntegrationDetails.description}</p>
+          <p className="mt-1 text-sm text-muted">{description}</p>
         </div>
       </div>
 

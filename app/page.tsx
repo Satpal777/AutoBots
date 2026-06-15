@@ -422,12 +422,27 @@ function Closing() {
 function Footer() {
   return (
     <footer className="border-t border-line">
-      <div className="site-shell flex flex-col gap-5 py-7 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
-        <AutobotLogo />
-        <p>Gmail and Calendar, arranged around your day.</p>
-        <Link className="font-semibold text-forest hover:text-forest-hover" href="/sign-in">
-          Sign in
-        </Link>
+      <div className="site-shell flex flex-col gap-6 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <AutobotLogo />
+          <p className="mt-2 text-xs">
+            Gmail and Calendar, arranged around your day.
+          </p>
+        </div>
+        <nav
+          aria-label="Footer navigation"
+          className="flex flex-wrap gap-x-5 gap-y-3 font-semibold text-forest"
+        >
+          <Link className="hover:text-forest-hover" href="/privacy">
+            Privacy
+          </Link>
+          <Link className="hover:text-forest-hover" href="/tnc">
+            Terms
+          </Link>
+          <Link className="hover:text-forest-hover" href="/sign-in">
+            Sign in
+          </Link>
+        </nav>
       </div>
     </footer>
   );
