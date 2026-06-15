@@ -25,11 +25,18 @@ import {
   Sparkles,
   Trash2,
   Users,
+  X,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { createPortal } from "react-dom";
 import { getLocalByokCredential } from "@/components/chat/byok-storage";
 import {
@@ -44,6 +51,7 @@ import {
 type Conversation = { id: string; title: string };
 type Message = { id: string; role: string; content: string; metadata?: unknown; cards?: ChatCard[] };
 type ChatMode = "auto" | "premium" | "free" | "byok";
+type IntegrationStatuses = { gmail: string; googlecalendar: string };
 
 export function ChatWorkspace({
   conversations,
@@ -60,7 +68,7 @@ export function ChatWorkspace({
   initialMessages: Message[];
   plan: { name: string; used: number; limit: number; remaining: number };
   approvals: { token: string; plugin: string; endpoint: string }[];
-  integrations: { gmail: string; googlecalendar: string };
+  integrations: IntegrationStatuses;
   byokStorageKey: string;
   userName: string;
 }) {
@@ -200,12 +208,6 @@ export function ChatWorkspace({
           </Link>
         </header>
         <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7 ${messages.length === 0 ? "flex flex-col" : "space-y-4"}`}>
-          {integrations.gmail !== "connected" || integrations.googlecalendar !== "connected" ? (
-            <div className="rounded-xl border border-gold/30 bg-gold-soft p-4 text-sm text-ink">
-              Connect {integrations.gmail !== "connected" ? "Gmail" : ""}{integrations.gmail !== "connected" && integrations.googlecalendar !== "connected" ? " and " : ""}{integrations.googlecalendar !== "connected" ? "Google Calendar" : ""} to unlock all agent actions.{" "}
-              <Link href="/dashboard/settings" className="font-semibold text-forest">Open settings</Link>
-            </div>
-          ) : null}
           {approvals.map((approval) => <PendingApprovalCard key={approval.token} token={approval.token} title={`${approval.plugin}: ${approval.endpoint}`} />)}
           {messages.length === 0 ? (
             <EmptyChat
@@ -220,6 +222,7 @@ export function ChatWorkspace({
               pending={pending}
               send={send}
               textareaRef={textareaRef}
+              integrations={integrations}
             />
           ) : messages.map((item) => (
             <div key={item.id} className={item.role === "user" ? "ml-auto max-w-[80%]" : "max-w-[88%]"}>
@@ -232,6 +235,7 @@ export function ChatWorkspace({
           {error ? <p className="text-sm font-medium text-red-700">{error}</p> : null}
         </div>
         {messages.length > 0 ? <div className="shrink-0 border-t border-line bg-surface p-4">
+          <IntegrationConnectionNotice integrations={integrations} />
           <ChatComposer message={message} setMessage={setMessage} mode={mode} setMode={setMode} autoApprove={autoApprove} setAutoApprove={setAutoApprove} pending={pending} send={send} textareaRef={textareaRef} />
         </div> : null}
       </section>
@@ -461,6 +465,7 @@ function EmptyChat({
   pending,
   send,
   textareaRef,
+  integrations,
 }: {
   userName: string;
   plan: { name: string; used: number; limit: number; remaining: number };
@@ -473,6 +478,7 @@ function EmptyChat({
   pending: boolean;
   send: () => Promise<void>;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  integrations: IntegrationStatuses;
 }) {
   const prompts = [
     { label: "Latest emails", prompt: "Show me my five latest emails.", icon: MailSearch },
@@ -493,6 +499,7 @@ function EmptyChat({
     </p>
 
     <div className="mt-8 text-left">
+      <IntegrationConnectionNotice integrations={integrations} />
       <ChatComposer message={message} setMessage={setMessage} mode={mode} setMode={setMode} autoApprove={autoApprove} setAutoApprove={setAutoApprove} pending={pending} send={send} textareaRef={textareaRef} featured />
       <div className="mt-3 flex flex-wrap justify-center gap-2">
         {prompts.map(({ label, prompt, icon: Icon }) => (
@@ -505,6 +512,91 @@ function EmptyChat({
       <UsageIndicator plan={plan} mode={mode} />
     </div>
   </div>;
+}
+
+const CONNECTION_NOTICE_CHANGE_EVENT = "autobot-chat-connection-notice-change";
+const dismissedConnectionNotices = new Set<string>();
+
+function IntegrationConnectionNotice({
+  integrations,
+}: {
+  integrations: IntegrationStatuses;
+}) {
+  const gmailMissing = integrations.gmail !== "connected";
+  const calendarMissing = integrations.googlecalendar !== "connected";
+  const missingKey = [
+    gmailMissing ? "gmail" : "",
+    calendarMissing ? "googlecalendar" : "",
+  ]
+    .filter(Boolean)
+    .join("+");
+  const storageKey = `autobot-chat-connection-notice:v1:${missingKey}`;
+  const visible = useSyncExternalStore(
+    subscribeToConnectionNotice,
+    () => getConnectionNoticeSnapshot(storageKey),
+    () => true,
+  );
+
+  if ((!gmailMissing && !calendarMissing) || !visible) return null;
+
+  const message =
+    gmailMissing && calendarMissing
+      ? "Connect Gmail and Google Calendar so Autobot can search your workspace and prepare actions."
+      : gmailMissing
+        ? "Connect Gmail so Autobot can search email and prepare replies."
+        : "Connect Google Calendar so Autobot can review events and find availability.";
+
+  return (
+    <div
+      role="status"
+      className="mb-3 flex items-start gap-3 rounded-lg border border-gold/40 bg-gold-soft px-3 py-2.5 text-sm text-ink"
+    >
+      <p className="min-w-0 flex-1 leading-5">
+        {message}{" "}
+        <Link
+          href="/dashboard/settings"
+          className="font-semibold text-forest underline underline-offset-2"
+        >
+          Connect apps
+        </Link>
+      </p>
+      <button
+        type="button"
+        onClick={() => dismissConnectionNotice(storageKey)}
+        aria-label="Dismiss connection notice"
+        title="Dismiss notice"
+        className="grid size-8 shrink-0 place-items-center rounded-md text-forest transition hover:bg-forest/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest"
+      >
+        <X aria-hidden="true" className="size-4" />
+      </button>
+    </div>
+  );
+}
+
+function subscribeToConnectionNotice(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(CONNECTION_NOTICE_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(CONNECTION_NOTICE_CHANGE_EVENT, onChange);
+  };
+}
+
+function getConnectionNoticeSnapshot(storageKey: string) {
+  if (dismissedConnectionNotices.has(storageKey)) return false;
+  try {
+    return window.localStorage.getItem(storageKey) !== "dismissed";
+  } catch {
+    return true;
+  }
+}
+
+function dismissConnectionNotice(storageKey: string) {
+  dismissedConnectionNotices.add(storageKey);
+  try {
+    window.localStorage.setItem(storageKey, "dismissed");
+  } catch {}
+  window.dispatchEvent(new Event(CONNECTION_NOTICE_CHANGE_EVENT));
 }
 
 function UsageIndicator({

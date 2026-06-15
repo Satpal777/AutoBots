@@ -3,6 +3,7 @@ import Link from "next/link";
 import { IntegrationActionButton } from "@/components/integrations/integration-action-button";
 import { PageHeader } from "@/components/dashboard/workspace-panels";
 import {
+  AlertIcon,
   CalendarIcon,
   CheckIcon,
   MailIcon,
@@ -169,6 +170,8 @@ function SettingsNotice({
 }: {
   notice: { kind: "success" | "warning"; message: string };
 }) {
+  const NoticeIcon = notice.kind === "success" ? CheckIcon : AlertIcon;
+
   return (
     <div
       role="status"
@@ -178,7 +181,7 @@ function SettingsNotice({
           : "bg-gold-soft text-ink"
       }`}
     >
-      <CheckIcon className="mt-0.5 size-4 shrink-0" />
+      <NoticeIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
       {notice.message}
     </div>
   );
@@ -193,6 +196,14 @@ function getNotice(
   const integrationName = pluginResult.success
     ? googleIntegrationDetails[pluginResult.data].name
     : "Connected app";
+
+  if (searchParams.onboarding === "connections") {
+    return {
+      kind: "warning",
+      message:
+        "Connect Gmail and Google Calendar so Autobot can search your workspace and prepare actions.",
+    };
+  }
 
   switch (searchParams.status) {
     case "connected":

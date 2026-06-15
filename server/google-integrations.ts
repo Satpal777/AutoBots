@@ -7,7 +7,9 @@ import { getCorsairTenantId } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import {
   corsairAccounts,
+  corsairEntities,
   corsairIntegrations,
+  integrationSyncState,
 } from "@/lib/db/schema/corsair";
 import { getServerEnv } from "@/lib/env/server";
 import type { GoogleIntegrationPlugin } from "@/lib/integrations/google";
@@ -16,7 +18,6 @@ import { getGoogleIntegrationCallbackUrl } from "@/lib/integrations/google";
 import { corsair } from "./corsair";
 import {
   ensureCorsairTenant,
-  getCorsairTenant,
 } from "./corsair-tenant";
 
 export type GoogleIntegrationStatus =
@@ -80,19 +81,21 @@ export async function createGoogleIntegrationConnectUrl(
 export async function disconnectGoogleIntegration(
   plugin: GoogleIntegrationPlugin,
 ): Promise<void> {
-  const tenant = await getCorsairTenant();
+  const tenantId = await getCorsairTenantId();
+  const tenant = corsair.withTenant(tenantId);
   const keys =
     plugin === "gmail" ? tenant.gmail.keys : tenant.googlecalendar.keys;
 
   await Promise.all([
-    keys.set_access_token(null),
-    keys.set_refresh_token(null),
-    keys.set_expires_at(null),
-    keys.set_scope(null),
-    keys.set_webhook_signature(null),
+    Promise.all([
+      keys.set_access_token(null),
+      keys.set_refresh_token(null),
+      keys.set_expires_at(null),
+      keys.set_scope(null),
+      keys.set_webhook_signature(null),
+    ]),
+    clearIntegrationCache(tenantId, plugin),
   ]);
-
-  await clearIntegrationCache(tenant, plugin);
 }
 
 async function getConnectionStatus(
@@ -111,32 +114,39 @@ async function getConnectionStatus(
 }
 
 async function clearIntegrationCache(
-  tenant: Awaited<ReturnType<typeof getCorsairTenant>>,
+  tenantId: string,
   plugin: GoogleIntegrationPlugin,
 ): Promise<void> {
-  const entityClients =
-    plugin === "gmail"
-      ? [
-          tenant.gmail.db.messages,
-          tenant.gmail.db.threads,
-          tenant.gmail.db.drafts,
-          tenant.gmail.db.labels,
-        ]
-      : [tenant.googlecalendar.db.events, tenant.googlecalendar.db.calendars];
+  const db = getDb();
+  const accountRows = await db
+    .select({ id: corsairAccounts.id })
+    .from(corsairAccounts)
+    .innerJoin(
+      corsairIntegrations,
+      eq(corsairAccounts.integrationId, corsairIntegrations.id),
+    )
+    .where(
+      and(
+        eq(corsairAccounts.tenantId, tenantId),
+        eq(corsairIntegrations.name, plugin),
+      ),
+    );
+  const accountIds = accountRows.map(({ id }) => id);
 
-  await Promise.all(
-    entityClients.map(async (client) => {
-      while (true) {
-        const entities = await client.list({ limit: 250 });
+  await db.transaction(async (tx) => {
+    if (accountIds.length > 0) {
+      await tx
+        .delete(corsairEntities)
+        .where(inArray(corsairEntities.accountId, accountIds));
+    }
 
-        if (entities.length === 0) {
-          break;
-        }
-
-        await Promise.all(
-          entities.map((entity) => client.deleteByEntityId(entity.entity_id)),
-        );
-      }
-    }),
-  );
+    await tx
+      .delete(integrationSyncState)
+      .where(
+        and(
+          eq(integrationSyncState.tenantId, tenantId),
+          eq(integrationSyncState.integration, plugin),
+        ),
+      );
+  });
 }

@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { AutobotLogo } from "@/components/brand/autobot-logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { ArrowRightIcon } from "@/components/ui/icons";
 
 export function FloatingNav() {
   const [isCompact, setIsCompact] = useState(false);
@@ -40,24 +38,18 @@ export function FloatingNav() {
         className={`landing-nav-inner ${isCompact ? "is-compact" : ""}`}
       >
         <AutobotLogo />
-        <div className="hidden items-center gap-7 text-sm font-semibold text-forest/75 md:flex">
+        <div className="hidden items-center gap-7 text-sm font-semibold text-muted md:flex">
           <a className="transition-colors hover:text-forest" href="#story">
-            Overview
+            What it does
           </a>
           <a className="transition-colors hover:text-forest" href="#command-center">
-            Product
+            Daily view
           </a>
           <a className="transition-colors hover:text-forest" href="#security">
             Security
           </a>
         </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Link href="/sign-in" className="nav-action">
-            Sign in
-            <ArrowRightIcon className="size-4" />
-          </Link>
-        </div>
+        <ThemeToggle />
       </nav>
     </header>
   );
