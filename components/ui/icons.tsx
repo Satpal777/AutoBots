@@ -16,7 +16,6 @@ export {
   Tag as LabelIcon,
   MapPin as LocationIcon,
   Mail as MailIcon,
-  Music2 as MusicIcon,
   Moon as MoonIcon,
   Pencil as PencilIcon,
   Plus as PlusIcon,

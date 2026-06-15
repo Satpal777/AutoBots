@@ -240,106 +240,6 @@ export function buildAgentTools(userId: string, conversationContext: string, aut
         false,
       ),
     }),
-    spotify_search_tracks: tool({
-      description: "Search Spotify for tracks. Use the returned URI for queueing or playback.",
-      inputSchema: z.object({
-        query: z.string().trim().min(1).max(300),
-        limit: z.number().int().min(1).max(10).default(5),
-      }),
-      execute: async ({ query, limit }) => safelyExecute(async () => {
-        const result = await tenant.spotify.api.tracks.search({
-          q: query,
-          type: "track",
-          limit,
-        });
-        return (result.tracks.items ?? []).map((track) => ({
-          id: track.id,
-          uri: `spotify:track:${track.id}`,
-          name: track.name,
-          artists: track.artists?.map((artist) => artist.name) ?? [],
-          album: track.album?.name,
-          spotifyUrl: track.external_urls?.spotify,
-        }));
-      }),
-    }),
-    spotify_get_currently_playing: tool({
-      description: "Read the user's currently playing Spotify track.",
-      inputSchema: z.object({}),
-      execute: async () => safelyExecute(async () => {
-        const playback = await tenant.spotify.api.player.getCurrentlyPlaying({});
-        if (!playback?.item) return { playing: false, track: null };
-        return {
-          playing: playback.is_playing ?? false,
-          progressMs: playback.progress_ms,
-          track: {
-            id: playback.item.id,
-            name: playback.item.name,
-            artists: playback.item.artists?.map((artist) => artist.name) ?? [],
-            album: playback.item.album?.name,
-            spotifyUrl: playback.item.external_urls?.spotify,
-          },
-        };
-      }),
-    }),
-    spotify_get_recently_played: tool({
-      description: "Read the user's recently played Spotify tracks.",
-      inputSchema: z.object({
-        limit: z.number().int().min(1).max(10).default(5),
-      }),
-      execute: async ({ limit }) => safelyExecute(async () => {
-        const result = await tenant.spotify.api.player.getRecentlyPlayed({ limit });
-        return (result.items ?? []).flatMap((item) => item.track
-          ? [{
-              id: item.track.id,
-              name: item.track.name,
-              artists: item.track.artists?.map((artist) => artist.name) ?? [],
-              album: item.track.album?.name,
-              playedAt: item.played_at,
-              spotifyUrl: item.track.external_urls?.spotify,
-            }]
-          : []);
-      }),
-    }),
-    spotify_add_to_queue: tool({
-      description: "Request approval to add a Spotify track URI to the playback queue.",
-      inputSchema: z.object({
-        uri: z.string().regex(/^spotify:track:[A-Za-z0-9]+$/),
-      }),
-      execute: async ({ uri }) => safelyExecute(
-        () => tenant.spotify.api.player.addToQueue({ uri }),
-        userId,
-        autoApprove,
-      ),
-    }),
-    spotify_start_playback: tool({
-      description: "Request approval to start playing one or more Spotify track URIs.",
-      inputSchema: z.object({
-        uris: z.array(z.string().regex(/^spotify:track:[A-Za-z0-9]+$/)).min(1).max(20),
-      }),
-      execute: async ({ uris }) => safelyExecute(
-        () => tenant.spotify.api.player.startPlayback({ uris }),
-        userId,
-        autoApprove,
-      ),
-    }),
-    spotify_control_playback: tool({
-      description: "Request approval to pause, resume, skip, or go back in Spotify playback.",
-      inputSchema: z.object({
-        action: z.enum(["pause", "resume", "next", "previous"]),
-      }),
-      execute: async ({ action }) => safelyExecute(() => {
-        switch (action) {
-          case "pause":
-            return tenant.spotify.api.player.pause({});
-          case "resume":
-            return tenant.spotify.api.player.resume({});
-          case "next":
-            return tenant.spotify.api.player.skipToNext({});
-          case "previous":
-            return tenant.spotify.api.player.skipToPrevious({});
-        }
-      }, userId, autoApprove),
-    }),
   };
 
   const selected = selectAgentToolNames(conversationContext);
@@ -359,19 +259,12 @@ type AgentToolName =
   | "calendar_create_event"
   | "calendar_find_availability"
   | "calendar_update_event"
-  | "calendar_delete_event"
-  | "spotify_search_tracks"
-  | "spotify_get_currently_playing"
-  | "spotify_get_recently_played"
-  | "spotify_add_to_queue"
-  | "spotify_start_playback"
-  | "spotify_control_playback";
+  | "calendar_delete_event";
 
 function selectAgentToolNames(context: string): AgentToolName[] {
   const text = context.toLowerCase();
   const gmailDomain = /\b(email|emails|gmail|inbox|mail|message|messages|unread|sender|recipient|reply)\b/.test(text);
   const calendarDomain = /\b(calendar|calender|event|events|meeting|meetings|schedule|agenda|availability|available|free time|appointment)\b/.test(text);
-  const spotifyDomain = /\b(spotify|music|song|songs|track|tracks|playlist|album|artist|listening|playing|playback|queue)\b/.test(text);
   const gmailWrite = /\b(send|reply|draft|compose|forward|write)\b/.test(text);
   const calendarDelete = calendarDomain && /\b(delete|remove|cancel)\b/.test(text);
   const calendarWrite = calendarDomain && /\b(create|schedule|book|invite|add|move|reschedule|update|delete|remove|cancel)\b/.test(text);
@@ -393,12 +286,6 @@ function selectAgentToolNames(context: string): AgentToolName[] {
     selected.add("calendar_delete_event");
   }
   if (calendarDomain && /\b(availability|available|free time|free slot)\b/.test(text)) selected.add("calendar_find_availability");
-  if (spotifyDomain && /\b(find|search|song|track|music|album|artist|play|queue)\b/.test(text)) selected.add("spotify_search_tracks");
-  if (spotifyDomain && /\b(current|currently|playing|what is on|now playing)\b/.test(text)) selected.add("spotify_get_currently_playing");
-  if (spotifyDomain && /\b(recent|recently|history|last played)\b/.test(text)) selected.add("spotify_get_recently_played");
-  if (spotifyDomain && /\b(queue|add to queue)\b/.test(text)) selected.add("spotify_add_to_queue");
-  if (spotifyDomain && /\b(play|start)\b/.test(text)) selected.add("spotify_start_playback");
-  if (spotifyDomain && /\b(pause|resume|skip|next|previous|back)\b/.test(text)) selected.add("spotify_control_playback");
   if (/\b(find|search|remember|discuss|topic|about)\b/.test(text)) selected.add("workspace_search");
 
   if (selected.size === 0) {

@@ -2,7 +2,6 @@ import "server-only";
 
 import { gmail } from "@corsair-dev/gmail";
 import { googlecalendar } from "@corsair-dev/googlecalendar";
-import { spotify } from "@corsair-dev/spotify";
 import { createCorsair } from "corsair";
 import { getPool } from "@/lib/db/pool";
 import { getServerEnv } from "@/lib/env/server";
@@ -42,24 +41,6 @@ export const agentCorsair = createCorsair({
           "events.create": "require_approval",
           "events.update": "require_approval",
           "events.delete": "require_approval",
-        },
-      },
-    }),
-    spotify({
-      authType: "oauth_2",
-      permissions: {
-        mode: "strict",
-        overrides: {
-          "player.addToQueue": "require_approval",
-          "player.pause": "require_approval",
-          "player.resume": "require_approval",
-          "player.setVolume": "require_approval",
-          "player.skipToNext": "require_approval",
-          "player.skipToPrevious": "require_approval",
-          "player.startPlayback": "require_approval",
-          "playlists.addItem": "require_approval",
-          "playlists.create": "require_approval",
-          "playlists.removeItem": "deny",
         },
       },
     }),

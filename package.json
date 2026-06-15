@@ -16,7 +16,6 @@
     "@better-auth/drizzle-adapter": "^1.6.14",
     "@corsair-dev/gmail": "^0.1.3",
     "@corsair-dev/googlecalendar": "^0.1.2",
-    "@corsair-dev/spotify": "^0.1.2",
     "@next/env": "^16.2.9",
     "ai": "^6.0.197",
     "better-auth": "^1.6.14",

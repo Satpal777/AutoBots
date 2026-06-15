@@ -51,10 +51,10 @@ const sections: LegalSection[] = [
           </li>
           <li>
             <strong>Connected-app information:</strong> data you authorize
-            Autobot to access from Gmail, Google Calendar, and Spotify. This
+            Autobot to access from Gmail and Google Calendar. This
             can include emails, message metadata, drafts, labels, calendar
-            events, attendees, availability, music-library data, and playback
-            information, depending on the feature and permissions you use.
+            events, attendees, and availability, depending on the feature and
+            permissions you use.
           </li>
           <li>
             <strong>Workspace cache and derived information:</strong> copies of
@@ -84,15 +84,15 @@ const sections: LegalSection[] = [
         <p>
           Google sign-in identifies your Autobot account. Gmail and Google
           Calendar are connected separately, so you choose which workspace
-          permissions to grant. Spotify is also optional. Autobot requests
-          authorization through each provider and uses the resulting
-          credentials only for the connected features you use.
+          permissions to grant. Autobot requests authorization through Google
+          and uses the resulting credentials only for the connected features
+          you use.
         </p>
         <p>
           Connected features can read information and, when you request or
           permit it, take actions such as sending email, organizing messages,
-          creating or updating calendar events, or controlling Spotify
-          playback. Depending on your selected settings, some non-destructive
+          or creating or updating calendar events. Depending on your selected
+          settings, some non-destructive
           actions may run automatically. Destructive calendar deletion always
           requires explicit approval in the current service.
         </p>
@@ -153,8 +153,8 @@ const sections: LegalSection[] = [
         <p>We may share information only as needed with:</p>
         <ul>
           <li>
-            Google, Spotify, and other connected services when making requests
-            on your behalf;
+            Google and other connected services when making requests on your
+            behalf;
           </li>
           <li>
             OpenAI or OpenRouter when you use AI-powered features, as described
@@ -253,13 +253,12 @@ const sections: LegalSection[] = [
         <p>You can control your information in several ways:</p>
         <ul>
           <li>
-            Disconnect Gmail, Google Calendar, or Spotify in Settings. Autobot
-            removes the stored connection credentials and cached data for that
+            Disconnect Gmail or Google Calendar in Settings. Autobot removes
+            the stored connection credentials and cached data for that
             integration.
           </li>
           <li>
-            Revoke Google or Spotify access from the provider&apos;s account
-            settings.
+            Revoke Google access from the provider&apos;s account settings.
           </li>
           <li>
             Delete individual Autobot conversations or all saved chat history

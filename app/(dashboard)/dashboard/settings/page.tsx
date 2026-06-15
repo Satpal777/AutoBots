@@ -6,7 +6,6 @@ import {
   CalendarIcon,
   CheckIcon,
   MailIcon,
-  MusicIcon,
   ShieldIcon,
 } from "@/components/ui/icons";
 import {
@@ -15,14 +14,10 @@ import {
   googleIntegrationDetails,
 } from "@/lib/integrations/google";
 import { getGoogleIntegrationStatuses } from "@/server/google-integrations";
-import { spotifyIntegrationDetails } from "@/lib/integrations/spotify";
-import { getSpotifyIntegrationStatus, type SpotifyIntegrationStatus } from "@/server/spotify-integrations";
 
 import {
   connectGoogleIntegrationAction,
-  connectSpotifyIntegrationAction,
   disconnectGoogleIntegrationAction,
-  disconnectSpotifyIntegrationAction,
 } from "../actions";
 
 type SettingsPageProps = {
@@ -30,9 +25,8 @@ type SettingsPageProps = {
 };
 
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
-  const [statuses, spotifyStatus, params] = await Promise.all([
+  const [statuses, params] = await Promise.all([
     getGoogleIntegrationStatuses(),
-    getSpotifyIntegrationStatus(),
     searchParams,
   ]);
   const notice = getNotice(params);
@@ -59,7 +53,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               <IntegrationRow key={plugin} plugin={plugin} status={statuses[plugin]} />
             ),
           )}
-          <SpotifyIntegrationRow status={spotifyStatus} />
         </section>
 
         <aside className="product-panel-muted overflow-hidden">
@@ -95,44 +88,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         </aside>
       </div>
     </>
-  );
-}
-
-function SpotifyIntegrationRow({ status }: { status: SpotifyIntegrationStatus }) {
-  const connected = status === "connected";
-  const description = status === "error"
-    ? "Spotify could not verify API access. In Development Mode, use a Premium app-owner account, add this user in Spotify Users Management, then reconnect."
-    : spotifyIntegrationDetails.description;
-
-  return (
-    <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-      <div className="flex min-w-0 items-center gap-4">
-        <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-success-soft text-success">
-          <MusicIcon className="size-5" />
-        </span>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-semibold text-ink">{spotifyIntegrationDetails.name}</h2>
-            <ConnectionStatus status={status} />
-          </div>
-          <p className="mt-1 text-sm text-muted">{description}</p>
-        </div>
-      </div>
-
-      <form
-        action={connected ? disconnectSpotifyIntegrationAction : connectSpotifyIntegrationAction}
-        target={connected ? undefined : "_blank"}
-        rel={connected ? undefined : "noopener noreferrer"}
-      >
-        <IntegrationActionButton
-          pendingLabel={connected ? "Disconnecting..." : "Connecting..."}
-          variant={connected ? "secondary" : "primary"}
-          title={connected ? undefined : "Open Spotify authorization in a new tab"}
-        >
-          {connected ? "Disconnect" : "Connect Spotify"}
-        </IntegrationActionButton>
-      </form>
-    </div>
   );
 }
 
@@ -235,11 +190,9 @@ function getNotice(
   const pluginResult = GoogleIntegrationPluginSchema.safeParse(
     searchParams.integration,
   );
-  const integrationName = searchParams.integration === "spotify"
-    ? spotifyIntegrationDetails.name
-    : pluginResult.success
-      ? googleIntegrationDetails[pluginResult.data].name
-      : "Connected app";
+  const integrationName = pluginResult.success
+    ? googleIntegrationDetails[pluginResult.data].name
+    : "Connected app";
 
   switch (searchParams.status) {
     case "connected":

@@ -60,10 +60,10 @@ const sections: LegalSection[] = [
       <>
         <p>
           Autobot provides a command center for reviewing and acting on
-          information from connected services such as Gmail, Google Calendar,
-          and Spotify. Features may include search, summaries, inbox
+          information from connected services such as Gmail and Google
+          Calendar. Features may include search, summaries, inbox
           organization, chat, drafting or sending messages, calendar
-          management, and music playback controls.
+          management, and related workspace actions.
         </p>
         <p>
           Features may change, be limited, or be discontinued. Some features
@@ -101,8 +101,8 @@ const sections: LegalSection[] = [
       <>
         <p>
           Autobot can perform actions such as sending email, creating drafts,
-          organizing messages, creating or updating calendar events, and
-          controlling Spotify playback. You are responsible for reviewing
+          organizing messages, and creating or updating calendar events. You
+          are responsible for reviewing
           requests, recipients, dates, content, and settings before permitting
           an action.
         </p>
@@ -201,8 +201,8 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>
-          Autobot depends on third-party services, including Google, Spotify,
-          OpenAI, OpenRouter, and infrastructure providers. Your use of those
+          Autobot depends on third-party services, including Google, OpenAI,
+          OpenRouter, and infrastructure providers. Your use of those
           services may be governed by their own terms, policies, permissions,
           quotas, and availability.
         </p>

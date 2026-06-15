@@ -23,9 +23,6 @@ importers:
       '@corsair-dev/googlecalendar':
         specifier: ^0.1.2
         version: 0.1.2(@types/node@20.19.42)(corsair@0.1.74)(zod@4.4.3)
-      '@corsair-dev/spotify':
-        specifier: ^0.1.2
-        version: 0.1.2(@types/node@20.19.42)(corsair@0.1.74)(zod@4.4.3)
       '@next/env':
         specifier: ^16.2.9
         version: 16.2.9
@@ -468,12 +465,6 @@ packages:
 
   '@corsair-dev/googlecalendar@0.1.2':
     resolution: {integrity: sha512-emUWBB+dybgcc/HpI3Km0rUdvCtzFIw+gb4TVfCIfBAYqwxo5iKCUAiLtQ6WdouyZwJjtIKt3JPBjUNSA+Y7Aw==}
-    peerDependencies:
-      corsair: '>=0.1.0'
-      zod: ^4.1.13
-
-  '@corsair-dev/spotify@0.1.2':
-    resolution: {integrity: sha512-uE8fSWhVaUenxyI4Y0+AlTNT7hacUzm8kRJ+3ulhbDWj8eXoOQaopgdMXMkT5TD5PEgutZ6jzg9BE+/oCsC+XA==}
     peerDependencies:
       corsair: '>=0.1.0'
       zod: ^4.1.13
@@ -4291,18 +4282,6 @@ snapshots:
       - ts-node
 
   '@corsair-dev/googlecalendar@0.1.2(@types/node@20.19.42)(corsair@0.1.74)(zod@4.4.3)':
-    dependencies:
-      corsair: 0.1.74
-      jest: 29.7.0(@types/node@20.19.42)
-      zod: 4.4.3
-    transitivePeerDependencies:
-      - '@types/node'
-      - babel-plugin-macros
-      - node-notifier
-      - supports-color
-      - ts-node
-
-  '@corsair-dev/spotify@0.1.2(@types/node@20.19.42)(corsair@0.1.74)(zod@4.4.3)':
     dependencies:
       corsair: 0.1.74
       jest: 29.7.0(@types/node@20.19.42)

@@ -9,10 +9,6 @@ import {
   createGoogleIntegrationConnectUrl,
   disconnectGoogleIntegration,
 } from "@/server/google-integrations";
-import {
-  createSpotifyIntegrationConnectUrl,
-  disconnectSpotifyIntegration,
-} from "@/server/spotify-integrations";
 
 const IntegrationActionSchema = z.object({
   plugin: GoogleIntegrationPluginSchema,
@@ -57,29 +53,4 @@ export async function disconnectGoogleIntegrationAction(formData: FormData) {
   }
 
   redirect(`/dashboard/settings?integration=${result.data.plugin}&status=${status}`);
-}
-
-export async function connectSpotifyIntegrationAction() {
-  let destination: string;
-
-  try {
-    destination = await createSpotifyIntegrationConnectUrl();
-  } catch {
-    destination = "/dashboard/settings?integration=spotify&status=error";
-  }
-
-  redirect(destination);
-}
-
-export async function disconnectSpotifyIntegrationAction() {
-  let status = "disconnected";
-
-  try {
-    await disconnectSpotifyIntegration();
-    revalidatePath("/dashboard");
-  } catch {
-    status = "error";
-  }
-
-  redirect(`/dashboard/settings?integration=spotify&status=${status}`);
 }
