@@ -17,6 +17,7 @@ const RequestSchema = z.object({
   message: z.string().trim().min(1).max(10_000),
   mode: z.enum(["auto", "premium", "free", "byok"]).default("auto"),
   autoApprove: z.boolean().default(true),
+  clientTimeZone: z.string().trim().min(1).max(100).refine(isValidTimeZone).default("UTC"),
   byok: z.object({
     provider: z.enum(["openai", "openrouter"]),
     apiKey: z.string().trim().min(12).max(500),
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
   const parsed = RequestSchema.safeParse(await request.json());
   if (!parsed.success) return Response.json({ error: "Invalid chat request." }, { status: 400 });
 
-  const { conversationId, message, mode, byok, autoApprove } = parsed.data;
+  const { conversationId, message, mode, byok, autoApprove, clientTimeZone } = parsed.data;
   await requireConversation(session.user.id, conversationId);
   let resolved = await resolveAgentModel(session.user.id, mode, byok);
   let usageId: string;
@@ -72,8 +73,12 @@ export async function POST(request: Request) {
         ? "Use only provided tools. Approved writes execute automatically through frozen one-time permissions."
         : "Use only provided tools. Writes require user approval.",
       "Calendar deletion is destructive and always requires explicit user approval, regardless of the auto-approve setting.",
-      "Clarify ambiguous recipients, dates, times, or timezones.",
-      "Cards show tool results, so answer briefly.",
+      buildDateContext(clientTimeZone),
+      "Use the user's timezone unless they explicitly provide another timezone.",
+      "If an explicit date conflicts with a relative date such as today or tomorrow, ask one short clarification question that presents the concrete date options. Do not narrate your reasoning.",
+      "Clarify only missing or genuinely conflicting recipients, dates, times, or timezones. When details are sufficient, act instead of asking for confirmation.",
+      "Write for the user, not a developer: use plain text, natural language, and 1 to 3 short sentences. Avoid raw Markdown, headings, internal reasoning, tool names, provider names, and implementation jargon.",
+      "Start with the outcome, next action, or concise clarification. Cards show tool results, so do not repeat their details.",
     ].join(" "),
     messages: history.map((item) => ({ role: item.role as "user" | "assistant", content: item.content })),
     onFinish: async ({ text, usage }) => {
@@ -121,4 +126,24 @@ export async function POST(request: Request) {
       "x-autobot-model": resolved.modelName,
     },
   });
+}
+
+function isValidTimeZone(value: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function buildDateContext(timeZone: string) {
+  const now = new Date();
+  const localDateTime = new Intl.DateTimeFormat("en-US", {
+    dateStyle: "full",
+    timeStyle: "long",
+    timeZone,
+  }).format(now);
+
+  return `The authoritative current date and time is ${localDateTime} in ${timeZone}. Resolve today, tomorrow, weekdays, and other relative dates from this value.`;
 }

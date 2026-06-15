@@ -3,7 +3,6 @@ import Link from "next/link";
 import {
   applyGmailLabelAction,
   archiveGmailThreadAction,
-  replyToGmailThreadAction,
   saveGmailDraftAction,
   sendGmailDraftAction,
   sendGmailMessageAction,
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/icons";
 
 import { GmailSubmitButton } from "./gmail-submit-button";
+import { GmailReplyComposer } from "./gmail-reply-composer";
 
 export function GmailSectionNav({ active }: { active: "inbox" | "drafts" }) {
   return (
@@ -170,9 +170,11 @@ export function GmailThreadList({
 export function GmailThreadView({
   thread,
   labels,
+  byokStorageKey,
 }: {
   thread: GmailThreadDetail;
   labels: GmailLabelOption[];
+  byokStorageKey: string;
 }) {
   return (
     <>
@@ -310,19 +312,12 @@ export function GmailThreadView({
                   </div>
                   <ReplyIcon className="size-4 shrink-0 text-forest" />
                 </div>
-                <form action={replyToGmailThreadAction} className="mt-4">
-                  <input type="hidden" name="threadId" value={thread.id} />
-                  <input type="hidden" name="to" value={thread.replyTo} />
-                  <input type="hidden" name="subject" value={prefixReplySubject(thread.subject)} />
-                  <label className="sr-only" htmlFor="reply-body">Reply message</label>
-                  <textarea id="reply-body" name="body" required rows={6} className="product-input w-full resize-y px-4 py-3 text-sm leading-6" placeholder="Write your reply..." />
-                  <div className="mt-3 flex justify-end">
-                    <GmailSubmitButton pendingLabel="Sending reply...">
-                      <SendIcon className="size-4" />
-                      Send reply
-                    </GmailSubmitButton>
-                  </div>
-                </form>
+                <GmailReplyComposer
+                  threadId={thread.id}
+                  to={thread.replyTo}
+                  subject={prefixReplySubject(thread.subject)}
+                  byokStorageKey={byokStorageKey}
+                />
               </section>
             </div>
           ) : null}

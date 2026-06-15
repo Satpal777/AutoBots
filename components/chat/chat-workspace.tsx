@@ -273,7 +273,14 @@ export function ChatWorkspace({
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ conversationId: activeId, message: content, mode: requestMode, byok, autoApprove }),
+        body: JSON.stringify({
+          conversationId: activeId,
+          message: content,
+          mode: requestMode,
+          byok,
+          autoApprove,
+          clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
       });
       if (!response.ok || !response.body) {
         const error = await response.text();
@@ -426,11 +433,11 @@ export function ChatWorkspace({
                 {messages.map((item) => (
                   <div key={item.id} className={item.role === "user" ? "ml-auto max-w-[80%]" : "max-w-[88%]"}>
                     {item.role === "user" ? (
-                      <div className="rounded-xl bg-forest px-4 py-3 text-sm leading-6 text-white">
+                      <div className="whitespace-pre-wrap rounded-xl bg-forest px-4 py-3 text-sm leading-6 text-white">
                         {item.content}
                       </div>
                     ) : (
-                      <Card className="border-0 bg-surface-soft px-4 py-3 text-sm leading-6">
+                      <Card className="whitespace-pre-wrap border-0 bg-surface-soft px-4 py-3 text-sm leading-6">
                         {item.content || (pending ? "Thinking..." : "")}
                       </Card>
                     )}

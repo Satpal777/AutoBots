@@ -6,6 +6,7 @@ import { generateObject } from "ai";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { cosineDistance } from "drizzle-orm/sql/functions/vector";
 import { z } from "zod";
+import { PLATFORM_OPENROUTER_FREE_MODEL } from "@/lib/ai/models";
 import { getDb } from "@/lib/db";
 import { corsairAccounts, corsairEntities, entityIntelligence } from "@/lib/db/schema";
 import { getServerEnv } from "@/lib/env/server";
@@ -412,10 +413,10 @@ async function classifyEntitiesBatch(entities: CachedEntity[], byok?: Intelligen
   }
 }
 
-function getIntelligenceProvider(byok?: IntelligenceByok) {
+export function getIntelligenceProvider(byok?: IntelligenceByok) {
   const env = getServerEnv();
   if (byok) {
-    const modelName = byok.model || (byok.provider === "openrouter" ? env.OPENROUTER_FREE_MODEL : "gpt-4.1-nano");
+    const modelName = byok.model || (byok.provider === "openrouter" ? PLATFORM_OPENROUTER_FREE_MODEL : "gpt-4.1-nano");
     return {
       modelName,
       provider: createOpenAI(byok.provider === "openrouter" ? {
@@ -428,7 +429,7 @@ function getIntelligenceProvider(byok?: IntelligenceByok) {
   }
   if (!env.OPENROUTER_API_KEY) throw new Error("OpenRouter free model is not configured.");
   return {
-    modelName: env.OPENROUTER_FREE_MODEL,
+    modelName: PLATFORM_OPENROUTER_FREE_MODEL,
     provider: createOpenAI({
       apiKey: env.OPENROUTER_API_KEY,
       baseURL: "https://openrouter.ai/api/v1",

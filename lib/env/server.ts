@@ -30,7 +30,6 @@ const ServerEnvSchema = z.object({
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).default("gpt-4.1-nano"),
   OPENROUTER_API_KEY: z.string().min(1).optional(),
-  OPENROUTER_FREE_MODEL: z.string().min(1).default("openrouter/free"),
   AGENT_MAX_STEPS: z.coerce.number().int().min(1).max(20).default(8),
   INNGEST_EVENT_KEY: z.string().min(1).optional(),
   INNGEST_SIGNING_KEY: z.string().min(1).optional(),

@@ -104,7 +104,7 @@ export function LocalByokSettings({ storageKey }: { storageKey: string }) {
             </div>
             <form onSubmit={(event) => saveCredential(provider, event)} className="mt-5 grid gap-3">
               <input name="apiKey" type="password" required minLength={12} autoComplete="off" placeholder="API key" className="product-input px-4 text-sm" />
-              <input name="model" placeholder={provider === "openrouter" ? "Optional model, e.g. openrouter/free" : "Optional model"} className="product-input px-4 text-sm" />
+              <input name="model" placeholder={provider === "openrouter" ? "Optional model, e.g. openai/gpt-oss-120b:free" : "Optional model"} className="product-input px-4 text-sm" />
               <button className="product-button-primary px-4">{saved ? "Replace local key" : "Save key in browser"}</button>
             </form>
             {saved ? (

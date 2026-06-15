@@ -3,6 +3,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { createOpenAI } from "@ai-sdk/openai";
 import { and, count, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
+import { PLATFORM_OPENROUTER_FREE_MODEL } from "@/lib/ai/models";
 import { getDb } from "@/lib/db";
 import { aiUsage, plans, userEntitlements } from "@/lib/db/schema";
 import { getServerEnv } from "@/lib/env/server";
@@ -48,7 +49,7 @@ export async function resolveAgentModel(
 
   if (byok) {
     const provider = byok.provider;
-    const modelName = byok.model || (provider === "openrouter" ? env.OPENROUTER_FREE_MODEL : env.OPENAI_MODEL);
+    const modelName = byok.model || (provider === "openrouter" ? PLATFORM_OPENROUTER_FREE_MODEL : env.OPENAI_MODEL);
     return {
       mode: "byok" as const, provider, modelName, plan,
       model: createOpenAI(provider === "openrouter" ? {
@@ -71,10 +72,10 @@ export async function resolveAgentModel(
 
   if (mode === "free") {
     if (!env.OPENROUTER_API_KEY) throw new Error("Platform OpenRouter is not configured.");
-    return { mode, provider: "openrouter", modelName: env.OPENROUTER_FREE_MODEL, model: createOpenAI({
+    return { mode, provider: "openrouter", modelName: PLATFORM_OPENROUTER_FREE_MODEL, model: createOpenAI({
       apiKey: env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1", name: "openrouter",
       headers: { "HTTP-Referer": env.APP_URL, "X-Title": "Autobot" },
-    }).chat(env.OPENROUTER_FREE_MODEL), plan };
+    }).chat(PLATFORM_OPENROUTER_FREE_MODEL), plan };
   }
 
   throw new Error("Add an OpenAI or OpenRouter key in Settings.");

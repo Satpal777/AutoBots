@@ -186,6 +186,9 @@ export async function getGmailThread(
     .map(toMessageDetail)
     .sort((left, right) => compareDates(left.receivedAt, right.receivedAt));
   const latestMessage = normalized.at(-1);
+  const latestReceivedMessage = [...normalized]
+    .reverse()
+    .find((message) => !message.sent && message.from);
 
   return {
     id: threadId,
@@ -193,7 +196,9 @@ export async function getGmailThread(
       normalized.find((message) => message.subject)?.subject ??
       latestMessage?.subject ??
       null,
-    replyTo: extractEmailAddress(latestMessage?.from),
+    replyTo:
+      extractEmailAddress(latestReceivedMessage?.from) ??
+      extractEmailAddress(latestMessage?.to),
     unread: normalized.some((message) => message.unread),
     messages: normalized,
   };

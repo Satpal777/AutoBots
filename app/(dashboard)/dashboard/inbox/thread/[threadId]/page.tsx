@@ -10,6 +10,8 @@ import {
 import { PageHeader } from "@/components/dashboard/workspace-panels";
 import { getGmailLabels, getGmailThread } from "@/server/gmail";
 import { getGoogleIntegrationStatuses } from "@/server/google-integrations";
+import { requireSession } from "@/lib/auth/session";
+import { getByokStorageKey } from "@/server/byok";
 
 type ThreadPageProps = {
   params: Promise<{ threadId: string }>;
@@ -27,10 +29,11 @@ export default async function ThreadPage({
   params,
   searchParams,
 }: ThreadPageProps) {
-  const [{ threadId: rawThreadId }, queryParams, statuses] = await Promise.all([
+  const [{ threadId: rawThreadId }, queryParams, statuses, session] = await Promise.all([
     params,
     searchParams,
     getGoogleIntegrationStatuses(),
+    requireSession(),
   ]);
   const threadIdResult = ThreadIdSchema.safeParse(rawThreadId);
 
@@ -78,7 +81,11 @@ export default async function ThreadPage({
         }
       />
       <GmailNotice status={getStringParam(queryParams.status)} />
-      <GmailThreadView thread={thread} labels={labels} />
+      <GmailThreadView
+        thread={thread}
+        labels={labels}
+        byokStorageKey={getByokStorageKey(session.user.id)}
+      />
     </>
   );
 }
