@@ -849,12 +849,33 @@ body {
   outline: none;
 }
 
-.chat-composer-featured {
-  box-shadow: var(--shadow-raised);
+.chat-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
 }
 
-.chat-composer-featured:focus-within {
-  transform: translateY(-1px);
+.chat-scroll-area::-webkit-scrollbar {
+  width: 0.45rem;
+}
+
+.chat-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scroll-area::-webkit-scrollbar-thumb {
+  border: 0;
+  background: transparent;
+}
+
+.chat-scroll-area.is-scrolling {
+  scrollbar-color:
+    color-mix(in oklch, var(--forest) 45%, transparent)
+    transparent;
+}
+
+.chat-scroll-area.is-scrolling::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--forest) 45%, transparent);
 }
 
 .chat-mode-trigger {

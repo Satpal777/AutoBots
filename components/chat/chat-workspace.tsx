@@ -31,6 +31,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -81,6 +82,11 @@ export function ChatWorkspace({
 }) {
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messageViewportRef = useRef<HTMLDivElement>(null);
+  const scrollIdleTimeoutRef = useRef<number | null>(null);
+  const programmaticScrollTimeoutRef = useRef<number | null>(null);
+  const programmaticScrollRef = useRef(false);
+  const followLatestRef = useRef(true);
   const [messages, setMessages] = useState(() => initialMessages.map((item) => ({
     ...item,
     cards: readChatCards(item.metadata),
@@ -90,6 +96,73 @@ export function ChatWorkspace({
   const [autoApprove, setAutoApprove] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [showLatestButton, setShowLatestButton] = useState(false);
+  const [messageListScrolling, setMessageListScrolling] = useState(false);
+
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const viewport = messageViewportRef.current;
+    if (!viewport) return;
+
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const distanceFromBottom =
+      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    const smooth =
+      behavior === "smooth" && !reducedMotion && distanceFromBottom > 1;
+
+    programmaticScrollRef.current = smooth;
+    if (programmaticScrollTimeoutRef.current) {
+      window.clearTimeout(programmaticScrollTimeoutRef.current);
+    }
+    if (smooth) {
+      programmaticScrollTimeoutRef.current = window.setTimeout(() => {
+        programmaticScrollRef.current = false;
+      }, 600);
+    }
+
+    viewport.scrollTo({
+      top: viewport.scrollHeight,
+      behavior: smooth ? "smooth" : "auto",
+    });
+  }, []);
+
+  const followLatest = useCallback(() => {
+    followLatestRef.current = true;
+    setShowLatestButton(false);
+    scrollToLatest("smooth");
+  }, [scrollToLatest]);
+
+  function handleMessageListScroll() {
+    const viewport = messageViewportRef.current;
+    if (!viewport) return;
+
+    const distanceFromBottom =
+      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    const nearLatest = distanceFromBottom < 96;
+
+    if (programmaticScrollRef.current) {
+      followLatestRef.current = true;
+      setShowLatestButton(false);
+      if (nearLatest) {
+        programmaticScrollRef.current = false;
+        if (programmaticScrollTimeoutRef.current) {
+          window.clearTimeout(programmaticScrollTimeoutRef.current);
+        }
+      }
+    } else {
+      followLatestRef.current = nearLatest;
+      setShowLatestButton(!nearLatest && viewport.scrollHeight > viewport.clientHeight);
+    }
+    setMessageListScrolling(true);
+
+    if (scrollIdleTimeoutRef.current) {
+      window.clearTimeout(scrollIdleTimeoutRef.current);
+    }
+    scrollIdleTimeoutRef.current = window.setTimeout(() => {
+      setMessageListScrolling(false);
+    }, 700);
+  }
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
@@ -106,9 +179,49 @@ export function ChatWorkspace({
     textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
   }, [message]);
 
+  useLayoutEffect(() => {
+    followLatestRef.current = true;
+    scrollToLatest("auto");
+  }, [activeId, scrollToLatest]);
+
+  useEffect(() => {
+    if (!followLatestRef.current) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      scrollToLatest(pending ? "auto" : "smooth");
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [error, messages, pending, scrollToLatest]);
+
+  useEffect(() => {
+    const viewport = messageViewportRef.current;
+    if (!viewport || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(() => {
+      if (followLatestRef.current) {
+        scrollToLatest("auto");
+      }
+    });
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, [scrollToLatest]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollIdleTimeoutRef.current) {
+        window.clearTimeout(scrollIdleTimeoutRef.current);
+      }
+      if (programmaticScrollTimeoutRef.current) {
+        window.clearTimeout(programmaticScrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
   async function send() {
     const content = message.trim();
     if (!content || pending) return;
+    followLatestRef.current = true;
+    setShowLatestButton(false);
     setMessage("");
     setError("");
     const byok = mode === "byok" ? getLocalByokCredential(byokStorageKey) : undefined;
@@ -204,7 +317,7 @@ export function ChatWorkspace({
 
   return (
     <div className="grid min-h-[calc(100svh-8.5rem)] gap-3 md:h-[calc(100svh-8.5rem)] md:min-h-0 md:grid-cols-[minmax(0,1fr)_15rem] md:overflow-hidden lg:h-full lg:grid-cols-[minmax(0,1fr)_17rem]">
-      <Card className="flex min-h-[40rem] min-w-0 flex-col overflow-hidden md:min-h-0">
+      <Card className="flex h-[calc(100svh-8.5rem)] min-h-[30rem] min-w-0 flex-col overflow-hidden md:h-auto md:min-h-0">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-ink">{conversations.find((item) => item.id === activeId)?.title ?? "Autobot Chat"}</p>
@@ -220,43 +333,61 @@ export function ChatWorkspace({
             </Link>
           </Button>
         </header>
-        <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7 ${messages.length === 0 ? "flex flex-col" : "space-y-4"}`}>
-          {approvals.map((approval) => <PendingApprovalCard key={approval.token} token={approval.token} title={`${approval.plugin}: ${approval.endpoint}`} />)}
-          {messages.length === 0 ? (
-            <EmptyChat
-              userName={userName}
-              plan={plan}
-              message={message}
-              setMessage={setMessage}
-              mode={mode}
-              setMode={setMode}
-              autoApprove={autoApprove}
-              setAutoApprove={setAutoApprove}
-              pending={pending}
-              send={send}
-              textareaRef={textareaRef}
-              integrations={integrations}
-            />
-          ) : messages.map((item) => (
-            <div key={item.id} className={item.role === "user" ? "ml-auto max-w-[80%]" : "max-w-[88%]"}>
-              {item.role === "user" ? (
-                <div className="rounded-xl bg-forest px-4 py-3 text-sm leading-6 text-white">
-                  {item.content}
-                </div>
-              ) : (
-                <Card className="border-0 bg-surface-soft px-4 py-3 text-sm leading-6">
-                  {item.content || (pending ? "Thinking..." : "")}
-                </Card>
-              )}
-              {item.role === "assistant" && item.cards?.length ? <ChatCards cards={item.cards} onActionStatus={updateActionCard} /> : null}
+        <div className="relative min-h-0 flex-1">
+          <div
+            ref={messageViewportRef}
+            onScroll={handleMessageListScroll}
+            className={cn(
+              "chat-scroll-area h-full overflow-y-auto overscroll-contain p-5 sm:p-7",
+              messageListScrolling && "is-scrolling",
+            )}
+          >
+            <div className="flex min-h-full flex-col gap-4">
+              {messages.length === 0 ? (
+                <EmptyChat
+                  userName={userName}
+                  plan={plan}
+                  mode={mode}
+                  setMessage={setMessage}
+                />
+              ) : null}
+              <div className={cn("space-y-4", messages.length > 0 && "mt-auto")}>
+                {approvals.map((approval) => <PendingApprovalCard key={approval.token} token={approval.token} title={`${approval.plugin}: ${approval.endpoint}`} />)}
+                {messages.map((item) => (
+                  <div key={item.id} className={item.role === "user" ? "ml-auto max-w-[80%]" : "max-w-[88%]"}>
+                    {item.role === "user" ? (
+                      <div className="rounded-xl bg-forest px-4 py-3 text-sm leading-6 text-white">
+                        {item.content}
+                      </div>
+                    ) : (
+                      <Card className="border-0 bg-surface-soft px-4 py-3 text-sm leading-6">
+                        {item.content || (pending ? "Thinking..." : "")}
+                      </Card>
+                    )}
+                    {item.role === "assistant" && item.cards?.length ? <ChatCards cards={item.cards} onActionStatus={updateActionCard} /> : null}
+                  </div>
+                ))}
+                {error ? <Alert variant="destructive">{error}</Alert> : null}
+              </div>
             </div>
-          ))}
-          {error ? <Alert variant="destructive">{error}</Alert> : null}
+          </div>
+          {showLatestButton ? (
+            <Button
+              onClick={followLatest}
+              variant="secondary"
+              size="sm"
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 shadow-raised"
+              aria-label="Jump to latest message"
+            >
+              <ChevronDown aria-hidden="true" className="size-4" />
+              Latest
+            </Button>
+          ) : null}
         </div>
-        {messages.length > 0 ? <div className="shrink-0 border-t border-line bg-surface p-4">
+        <div className="shrink-0 border-t border-line bg-surface p-4">
           <IntegrationConnectionNotice integrations={integrations} />
-          <ChatComposer message={message} setMessage={setMessage} mode={mode} setMode={setMode} autoApprove={autoApprove} setAutoApprove={setAutoApprove} pending={pending} send={send} textareaRef={textareaRef} />
-        </div> : null}
+          <ChatComposer message={message} setMessage={setMessage} mode={mode} setMode={setMode} autoApprove={autoApprove} setAutoApprove={setAutoApprove} integrations={integrations} pending={pending} send={send} textareaRef={textareaRef} />
+        </div>
       </Card>
 
       <Card className="flex min-h-0 flex-col overflow-hidden p-3 md:h-full">
@@ -490,29 +621,13 @@ function formatEventTime(card: CalendarChatCard) {
 function EmptyChat({
   userName,
   plan,
-  message,
   setMessage,
   mode,
-  setMode,
-  autoApprove,
-  setAutoApprove,
-  pending,
-  send,
-  textareaRef,
-  integrations,
 }: {
   userName: string;
   plan: { name: string; used: number; limit: number; remaining: number };
-  message: string;
   setMessage: (message: string) => void;
   mode: ChatMode;
-  setMode: (mode: ChatMode) => void;
-  autoApprove: boolean;
-  setAutoApprove: (value: boolean) => void;
-  pending: boolean;
-  send: () => Promise<void>;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  integrations: IntegrationStatuses;
 }) {
   const prompts = [
     { label: "Latest emails", prompt: "Show me my five latest emails.", icon: MailSearch },
@@ -532,10 +647,8 @@ function EmptyChat({
       Search your workspace, prepare an email, or arrange a meeting. Auto-approve can run prepared actions immediately.
     </p>
 
-    <div className="mt-8 text-left">
-      <IntegrationConnectionNotice integrations={integrations} />
-      <ChatComposer message={message} setMessage={setMessage} mode={mode} setMode={setMode} autoApprove={autoApprove} setAutoApprove={setAutoApprove} pending={pending} send={send} textareaRef={textareaRef} featured />
-      <div className="mt-3 flex flex-wrap justify-center gap-2">
+    <div className="mt-8">
+      <div className="flex flex-wrap justify-center gap-2">
         {prompts.map(({ label, prompt, icon: Icon }) => (
           <Button key={label} onClick={() => setMessage(prompt)} variant="secondary" size="sm">
             <Icon aria-hidden="true" className="size-3.5" />
@@ -668,10 +781,10 @@ function ChatComposer({
   setMode,
   autoApprove,
   setAutoApprove,
+  integrations,
   pending,
   send,
   textareaRef,
-  featured = false,
 }: {
   message: string;
   setMessage: (message: string) => void;
@@ -679,10 +792,10 @@ function ChatComposer({
   setMode: (mode: ChatMode) => void;
   autoApprove: boolean;
   setAutoApprove: (value: boolean) => void;
+  integrations: IntegrationStatuses;
   pending: boolean;
   send: () => Promise<void>;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  featured?: boolean;
 }) {
   const modeMenuRef = useRef<HTMLDivElement>(null);
   const modeTriggerRef = useRef<HTMLButtonElement>(null);
@@ -731,7 +844,7 @@ function ChatComposer({
   }, [modeMenuOpen]);
 
   return (
-    <div className={featured ? "chat-composer chat-composer-featured" : "chat-composer"}>
+    <div className="chat-composer">
       <Textarea
         ref={textareaRef}
         value={message}
@@ -741,21 +854,23 @@ function ChatComposer({
         placeholder="Ask Autobot about your email or calendar..."
         className="max-h-[16rem] min-h-11 resize-none border-0 bg-transparent px-3 py-2.5 leading-6 focus-visible:border-transparent focus-visible:ring-0"
       />
-      <div className="flex items-center justify-between gap-3 border-t border-line px-2 py-2">
-        <div className="flex min-w-0 items-center gap-1">
+      <div className="flex items-center justify-between gap-3 border-t border-line px-2.5 py-2.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
           <div className="relative shrink-0">
             <Button
               ref={modeTriggerRef}
               aria-haspopup="menu"
               aria-expanded={modeMenuOpen}
+              aria-label={`AI mode: ${selectedMode.label}`}
+              title={`AI mode: ${selectedMode.label}`}
               onClick={() => setModeMenuOpen((open) => !open)}
               variant="ghost"
               size="sm"
               className="chat-mode-trigger"
             >
               <SelectedModeIcon aria-hidden="true" className="size-3.5" />
-              <span className="truncate">{selectedMode.label}</span>
-              <ChevronDown aria-hidden="true" className={`size-3.5 transition-transform ${modeMenuOpen ? "rotate-180" : ""}`} />
+              <span className="hidden truncate min-[430px]:inline">{selectedMode.label}</span>
+              <ChevronDown aria-hidden="true" className={`hidden size-3.5 transition-transform min-[430px]:block ${modeMenuOpen ? "rotate-180" : ""}`} />
             </Button>
             {modeMenuOpen && typeof document !== "undefined" ? createPortal(
               <div
@@ -801,13 +916,14 @@ function ChatComposer({
               href="/dashboard/settings/ai"
               aria-label="Open AI settings"
               title="AI settings"
+              className="hidden sm:inline-flex"
             >
               <Settings2 aria-hidden="true" className="size-4" />
             </Link>
           </Button>
-          <div className="flex items-center gap-2 px-2 text-xs font-semibold text-forest">
+          <div className="flex shrink-0 items-center gap-2 rounded-md px-1.5 text-xs font-semibold text-forest">
             <ShieldCheck aria-hidden="true" className="size-3.5" />
-            <span>Auto-approve</span>
+            <span className="hidden lg:inline">Auto-approve</span>
             <Switch
               checked={autoApprove}
               onCheckedChange={setAutoApprove}
@@ -815,11 +931,87 @@ function ChatComposer({
               title={autoApprove ? "Auto-approve is on" : "Auto-approve is off"}
             />
           </div>
+          <ComposerIntegrationStatuses integrations={integrations} />
         </div>
         <Button onClick={send} disabled={pending || !message.trim()} aria-label={pending ? "Autobot is working" : "Send message"} title={pending ? "Autobot is working" : "Send message"} size="icon">
           {pending ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <SendHorizontal aria-hidden="true" className="size-4" />}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function ComposerIntegrationStatuses({
+  integrations,
+}: {
+  integrations: IntegrationStatuses;
+}) {
+  const items = [
+    {
+      id: "gmail",
+      label: "Gmail",
+      connected: integrations.gmail === "connected",
+      icon: Mail,
+    },
+    {
+      id: "googlecalendar",
+      label: "Google Calendar",
+      connected: integrations.googlecalendar === "connected",
+      icon: CalendarDays,
+    },
+  ] as const;
+
+  return (
+    <div
+      className="flex shrink-0 items-center gap-1.5"
+      role="group"
+      aria-label="Connected apps"
+    >
+      {items.map(({ id, label, connected, icon: Icon }) => {
+        const status = connected
+          ? "connected"
+          : integrations[id] === "error"
+            ? "connection needs attention"
+            : "not connected";
+
+        return (
+          <Button
+            key={id}
+            asChild
+            variant="ghost"
+            size="icon-sm"
+            className={cn(
+              "relative border",
+              connected
+                ? "border-success/30 bg-success-soft text-success hover:border-success/50 hover:bg-success-soft hover:text-success"
+                : "border-line bg-surface-soft text-muted hover:border-red-700/30 hover:bg-red-700/10 hover:text-red-700 dark:hover:text-red-400",
+            )}
+          >
+            <Link
+              href="/dashboard/settings"
+              aria-label={`${label}: ${status}. Open connected apps.`}
+              title={`${label}: ${status}`}
+            >
+              <Icon aria-hidden="true" className="size-4" />
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute -right-1 -top-1 grid size-3.5 place-items-center rounded-full border border-surface",
+                  connected
+                    ? "bg-success text-white"
+                    : "bg-red-700 text-white dark:bg-red-500",
+                )}
+              >
+                {connected ? (
+                  <Check className="size-2.5 stroke-[3]" />
+                ) : (
+                  <X className="size-2.5 stroke-[3]" />
+                )}
+              </span>
+            </Link>
+          </Button>
+        );
+      })}
     </div>
   );
 }
