@@ -100,6 +100,7 @@ export async function refreshCalendarAction(formData: FormData) {
   const params = new URLSearchParams({
     status: "refreshed",
     view: result.data.view,
+    refreshedAt: String(Date.now()),
   });
 
   if (result.data.startDate) {

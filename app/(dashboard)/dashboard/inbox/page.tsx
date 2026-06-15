@@ -39,6 +39,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
   const queryResult = GmailQuerySchema.safeParse(getStringParam(params.q) ?? "");
   const query = queryResult.success ? queryResult.data || undefined : undefined;
   const status = getStringParam(params.status);
+  const refreshedAt = getTimestampParam(params.refreshedAt);
 
   if (statuses.gmail !== "connected") {
     return (
@@ -55,9 +56,10 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
 
   let inbox: GmailInboxPage = { threads: [], nextPageToken: null };
   let loadError = false;
+  const byokStorageKey = getByokStorageKey(session.user.id);
 
   try {
-    inbox = await getGmailInbox(query);
+    inbox = await getGmailInbox(query, undefined, undefined, false);
   } catch {
     loadError = true;
   }
@@ -84,7 +86,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       />
 
       <GmailNotice status={loadError ? "error" : status} />
-      <InboxIntelligenceNotice />
+      <InboxIntelligenceNotice byokStorageKey={byokStorageKey} />
 
       <div className="mt-7 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -93,7 +95,12 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
         <div className="flex items-center gap-2">
           <InboxSearch query={query} />
           <form action={refreshGmailInboxAction}>
-            <GmailSubmitButton pendingLabel="Refreshing..." variant="quiet">
+            <GmailSubmitButton
+              pendingLabel="Refreshing..."
+              variant="quiet"
+              refreshAttentionStorageScope={byokStorageKey}
+              clearRefreshAttentionThrough={refreshedAt}
+            >
               <RefreshIcon className="size-4" />
               Refresh
             </GmailSubmitButton>
@@ -112,7 +119,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
         initialThreads={inbox.threads}
         initialNextPageToken={inbox.nextPageToken}
         query={query}
-        byokStorageKey={getByokStorageKey(session.user.id)}
+        byokStorageKey={byokStorageKey}
       />
     </>
   );
@@ -162,4 +169,9 @@ function getFilterPattern(filter: string) {
 
 function getStringParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function getTimestampParam(value: string | string[] | undefined) {
+  const timestamp = Number(getStringParam(value));
+  return Number.isSafeInteger(timestamp) && timestamp > 0 ? timestamp : undefined;
 }

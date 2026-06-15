@@ -137,8 +137,8 @@ const sections: LegalSection[] = [
         <p>
           If you use a bring-your-own-key option, the selected API credential
           is stored in your browser profile. It is sent to the Autobot server
-          only with the BYOK chat or inbox-intelligence request that needs it,
-          and Autobot does not save that credential in its server database.
+          with browser-initiated AI requests while that key is active, and
+          Autobot does not save that credential in its server database.
           Your use of an AI provider is also subject to that provider&apos;s
           policies.
         </p>

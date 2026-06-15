@@ -88,7 +88,7 @@ export async function getCalendarWorkspacePreview(
 
 async function getGmailPreview(): Promise<GmailPreview> {
   try {
-    const inbox = await getGmailInbox();
+    const inbox = await getGmailInbox(undefined, undefined, undefined, false);
     const threads = inbox.threads.slice(0, 8);
     return {
       status: "ready",

@@ -830,6 +830,21 @@ body {
   background: var(--surface-soft);
 }
 
+.integration-refresh-needed,
+.integration-refresh-needed:hover {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+  color: var(--forest);
+}
+
+.integration-refresh-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex: none;
+  border-radius: 999px;
+  background: var(--gold);
+}
+
 .chat-composer {
   border: 1px solid var(--line);
   border-radius: 0.75rem;

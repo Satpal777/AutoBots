@@ -16,6 +16,8 @@ import {
   MailSearch,
   MapPin,
   Pencil,
+  PanelRightClose,
+  PanelRightOpen,
   Plus,
   Search,
   SendHorizontal,
@@ -39,7 +41,15 @@ import {
   useSyncExternalStore,
 } from "react";
 import { createPortal } from "react-dom";
-import { getLocalByokCredential } from "@/components/chat/byok-storage";
+import {
+  getLocalByokCredential,
+  getLocalByokSnapshot,
+  subscribeToLocalByok,
+} from "@/components/chat/byok-storage";
+import {
+  markIntegrationRefreshNeeded,
+  type RefreshAttentionIntegration,
+} from "@/components/integrations/integration-refresh-attention";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -98,6 +108,30 @@ export function ChatWorkspace({
   const [error, setError] = useState("");
   const [showLatestButton, setShowLatestButton] = useState(false);
   const [messageListScrolling, setMessageListScrolling] = useState(false);
+  const historyOpen = useSyncExternalStore(
+    subscribeToChatHistoryVisibility,
+    () => getChatHistoryVisibilitySnapshot(byokStorageKey),
+    () => true,
+  );
+  const byokSnapshot = useSyncExternalStore(
+    subscribeToLocalByok,
+    () => JSON.stringify(getLocalByokSnapshot(byokStorageKey)),
+    () => "{}",
+  );
+  const activeByok = byokSnapshot === "{}"
+    ? undefined
+    : getLocalByokCredential(byokStorageKey);
+  const effectiveMode: ChatMode = activeByok ? "byok" : mode;
+
+  function toggleHistory() {
+    try {
+      window.localStorage.setItem(
+        getChatHistoryVisibilityStorageKey(byokStorageKey),
+        String(!historyOpen),
+      );
+    } catch {}
+    window.dispatchEvent(new Event(CHAT_HISTORY_VISIBILITY_CHANGE_EVENT));
+  }
 
   const scrollToLatest = useCallback((behavior: ScrollBehavior = "smooth") => {
     const viewport = messageViewportRef.current;
@@ -224,8 +258,9 @@ export function ChatWorkspace({
     setShowLatestButton(false);
     setMessage("");
     setError("");
-    const byok = mode === "byok" ? getLocalByokCredential(byokStorageKey) : undefined;
-    if (mode === "byok" && !byok) {
+    const byok = getLocalByokCredential(byokStorageKey);
+    const requestMode: ChatMode = byok ? "byok" : mode;
+    if (requestMode === "byok" && !byok) {
       setMessage(content);
       setError("Add an OpenAI or OpenRouter key in AI settings first.");
       return;
@@ -238,7 +273,7 @@ export function ChatWorkspace({
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ conversationId: activeId, message: content, mode, byok, autoApprove }),
+        body: JSON.stringify({ conversationId: activeId, message: content, mode: requestMode, byok, autoApprove }),
       });
       if (!response.ok || !response.body) {
         const error = await response.text();
@@ -261,6 +296,9 @@ export function ChatWorkspace({
             if (event.type === "cards") return { ...item, cards: mergeCards(item.cards ?? [], event.cards) };
             return item;
           }));
+          if (event.type === "cards") {
+            markCompletedActionRefreshes(byokStorageKey, event.cards);
+          }
         }
         if (chunk.done) break;
       }
@@ -307,6 +345,12 @@ export function ChatWorkspace({
   }
 
   function updateActionCard(cardId: string, status: ActionChatCard["status"]) {
+    if (status === "completed") {
+      const action = messages
+        .flatMap((item) => item.cards ?? [])
+        .find((card): card is ActionChatCard => card.kind === "action" && card.id === cardId);
+      if (action) markActionRefreshNeeded(byokStorageKey, action.integration);
+    }
     setMessages((current) => current.map((item) => ({
       ...item,
       cards: item.cards?.map((card) => card.kind === "action" && card.id === cardId
@@ -316,22 +360,40 @@ export function ChatWorkspace({
   }
 
   return (
-    <div className="grid min-h-[calc(100svh-8.5rem)] gap-3 md:h-[calc(100svh-8.5rem)] md:min-h-0 md:grid-cols-[minmax(0,1fr)_15rem] md:overflow-hidden lg:h-full lg:grid-cols-[minmax(0,1fr)_17rem]">
+    <div className={cn(
+      "grid min-h-[calc(100svh-8.5rem)] gap-3 md:h-[calc(100svh-8.5rem)] md:min-h-0 md:overflow-hidden lg:h-full",
+      historyOpen
+        ? "md:grid-cols-[minmax(0,1fr)_15rem] lg:grid-cols-[minmax(0,1fr)_17rem]"
+        : "md:grid-cols-1",
+    )}>
       <Card className="flex h-[calc(100svh-8.5rem)] min-h-[30rem] min-w-0 flex-col overflow-hidden md:h-auto md:min-h-0">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-ink">{conversations.find((item) => item.id === activeId)?.title ?? "Autobot Chat"}</p>
             <p className="text-xs text-muted">{pending ? "Autobot is working..." : "Ready for your next command"}</p>
           </div>
-          <Button asChild variant="secondary" size="icon">
-            <Link
-              href="/dashboard/settings/ai"
-              aria-label="Open AI settings"
-              title="AI settings"
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={toggleHistory}
+              variant="secondary"
+              size="icon"
+              aria-label={historyOpen ? "Hide chat history" : "Show chat history"}
+              title={historyOpen ? "Hide chat history" : "Show chat history"}
             >
-              <Settings2 aria-hidden="true" className="size-4" />
-            </Link>
-          </Button>
+              {historyOpen
+                ? <PanelRightClose aria-hidden="true" className="size-4" />
+                : <PanelRightOpen aria-hidden="true" className="size-4" />}
+            </Button>
+            <Button asChild variant="secondary" size="icon">
+              <Link
+                href="/dashboard/settings/ai"
+                aria-label="Open AI settings"
+                title="AI settings"
+              >
+                <Settings2 aria-hidden="true" className="size-4" />
+              </Link>
+            </Button>
+          </div>
         </header>
         <div className="relative min-h-0 flex-1">
           <div
@@ -347,12 +409,20 @@ export function ChatWorkspace({
                 <EmptyChat
                   userName={userName}
                   plan={plan}
-                  mode={mode}
+                  mode={effectiveMode}
                   setMessage={setMessage}
                 />
               ) : null}
               <div className={cn("space-y-4", messages.length > 0 && "mt-auto")}>
-                {approvals.map((approval) => <PendingApprovalCard key={approval.token} token={approval.token} title={`${approval.plugin}: ${approval.endpoint}`} />)}
+                {approvals.map((approval) => (
+                  <PendingApprovalCard
+                    key={approval.token}
+                    token={approval.token}
+                    title={`${approval.plugin}: ${approval.endpoint}`}
+                    integration={toRefreshAttentionIntegration(approval.plugin)}
+                    refreshAttentionStorageScope={byokStorageKey}
+                  />
+                ))}
                 {messages.map((item) => (
                   <div key={item.id} className={item.role === "user" ? "ml-auto max-w-[80%]" : "max-w-[88%]"}>
                     {item.role === "user" ? (
@@ -386,11 +456,11 @@ export function ChatWorkspace({
         </div>
         <div className="shrink-0 border-t border-line bg-surface p-4">
           <IntegrationConnectionNotice integrations={integrations} />
-          <ChatComposer message={message} setMessage={setMessage} mode={mode} setMode={setMode} autoApprove={autoApprove} setAutoApprove={setAutoApprove} integrations={integrations} pending={pending} send={send} textareaRef={textareaRef} />
+          <ChatComposer message={message} setMessage={setMessage} mode={effectiveMode} setMode={setMode} byokActive={Boolean(activeByok)} autoApprove={autoApprove} setAutoApprove={setAutoApprove} integrations={integrations} pending={pending} send={send} textareaRef={textareaRef} />
         </div>
       </Card>
 
-      <Card className="flex min-h-0 flex-col overflow-hidden p-3 md:h-full">
+      {historyOpen ? <Card className="flex min-h-0 flex-col overflow-hidden p-3 md:h-full">
         <div className="flex shrink-0 items-center justify-between gap-3 px-1 pb-3">
           <div>
             <p className="text-sm font-semibold text-ink">Conversations</p>
@@ -460,7 +530,7 @@ export function ChatWorkspace({
             </Button>
           </Card>
         </div>
-      </Card>
+      </Card> : null}
     </div>
   );
 }
@@ -481,7 +551,7 @@ function ChatCards({ cards, onActionStatus }: { cards: ChatCard[]; onActionStatu
 function EmailCard({ card }: { card: EmailChatCard }) {
   return (
     <Link
-      href={`/dashboard/inbox/thread/${encodeURIComponent(card.threadId)}`}
+      href={getEmailCardHref(card)}
       className="group"
     >
       <Card className="h-full p-4 transition-colors hover:border-forest/30 hover:bg-surface-soft">
@@ -491,8 +561,8 @@ function EmailCard({ card }: { card: EmailChatCard }) {
           </div>
           <span className="text-[0.68rem] font-semibold text-muted">{formatCardDate(card.receivedAt)}</span>
         </div>
-        <p className="mt-3 truncate text-xs font-medium text-muted">{card.from ?? "Unknown sender"}</p>
-        <p className="mt-1 line-clamp-2 text-sm font-semibold text-ink">{card.subject ?? "No subject"}</p>
+        <p className="mt-3 truncate text-xs font-medium text-muted">{card.from ?? "Sender unavailable"}</p>
+        <p className="mt-1 line-clamp-2 text-sm font-semibold text-ink">{card.subject ?? "Email without a subject"}</p>
         {card.snippet ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">{card.snippet}</p> : null}
         <div className="mt-3 flex items-center justify-between text-xs font-semibold text-forest">
           <span>{card.unread ? "Unread" : "Email"}</span>
@@ -506,7 +576,7 @@ function EmailCard({ card }: { card: EmailChatCard }) {
 function CalendarCard({ card }: { card: CalendarChatCard }) {
   return (
     <Link
-      href={`/dashboard/calendar/event/${encodeURIComponent(card.id)}`}
+      href={getCalendarCardHref(card)}
       className="group"
     >
       <Card className="h-full p-4 transition-colors hover:border-gold/50 hover:bg-surface-soft">
@@ -532,6 +602,16 @@ function CalendarCard({ card }: { card: CalendarChatCard }) {
   );
 }
 
+function getEmailCardHref(card: EmailChatCard) {
+  const fallback = `/dashboard/inbox/thread/${encodeURIComponent(card.threadId)}`;
+  return card.href?.startsWith("/dashboard/inbox/thread/") ? card.href : fallback;
+}
+
+function getCalendarCardHref(card: CalendarChatCard) {
+  const fallback = `/dashboard/calendar/event/${encodeURIComponent(card.id)}`;
+  return card.href?.startsWith("/dashboard/calendar/event/") ? card.href : fallback;
+}
+
 function ActionCard({ card, onStatus }: { card: ActionChatCard; onStatus: (status: ActionChatCard["status"]) => void }) {
   const token = card.approvalUrl?.match(/\/dashboard\/approvals\/([A-Za-z0-9_-]+)/)?.[1];
   const content = (
@@ -552,10 +632,25 @@ function ActionCard({ card, onStatus }: { card: ActionChatCard; onStatus: (statu
   return content;
 }
 
-function PendingApprovalCard({ token, title }: { token: string; title: string }) {
+function PendingApprovalCard({
+  token,
+  title,
+  integration,
+  refreshAttentionStorageScope,
+}: {
+  token: string;
+  title: string;
+  integration: RefreshAttentionIntegration | null;
+  refreshAttentionStorageScope: string;
+}) {
   const [status, setStatus] = useState<ActionChatCard["status"]>("pending");
   if (status !== "pending") return null;
-  return <Card className="border-gold/40 bg-gold-soft p-4"><p className="text-xs font-semibold uppercase tracking-wider text-forest">Approval needed</p><p className="mt-1 text-sm font-semibold text-ink">{title}</p><InlineApprovalControls token={token} onStatus={setStatus} /></Card>;
+  return <Card className="border-gold/40 bg-gold-soft p-4"><p className="text-xs font-semibold uppercase tracking-wider text-forest">Approval needed</p><p className="mt-1 text-sm font-semibold text-ink">{title}</p><InlineApprovalControls token={token} onStatus={(nextStatus) => {
+    if (nextStatus === "completed" && integration) {
+      markIntegrationRefreshNeeded(refreshAttentionStorageScope, integration);
+    }
+    setStatus(nextStatus);
+  }} /></Card>;
 }
 
 function InlineApprovalControls({ token, onStatus }: { token: string; onStatus: (status: ActionChatCard["status"]) => void }) {
@@ -577,6 +672,30 @@ function InlineApprovalControls({ token, onStatus }: { token: string; onStatus: 
 
 function formatActionStatus(status: ActionChatCard["status"]) {
   return status === "pending" ? "Approval needed" : status === "completed" ? "Completed" : status === "denied" ? "Denied" : "Failed";
+}
+
+function markCompletedActionRefreshes(storageScope: string, cards: ChatCard[]) {
+  cards.forEach((card) => {
+    if (card.kind === "action" && card.status === "completed") {
+      markActionRefreshNeeded(storageScope, card.integration);
+    }
+  });
+}
+
+function markActionRefreshNeeded(
+  storageScope: string,
+  integration: ActionChatCard["integration"],
+) {
+  const refreshIntegration = toRefreshAttentionIntegration(integration);
+  if (refreshIntegration) {
+    markIntegrationRefreshNeeded(storageScope, refreshIntegration);
+  }
+}
+
+function toRefreshAttentionIntegration(value: string): RefreshAttentionIntegration | null {
+  if (value === "gmail") return "gmail";
+  if (value === "calendar" || value === "googlecalendar") return "calendar";
+  return null;
 }
 
 function mergeCards(current: ChatCard[], incoming: ChatCard[]) {
@@ -662,6 +781,8 @@ function EmptyChat({
 }
 
 const CONNECTION_NOTICE_CHANGE_EVENT = "autobot-chat-connection-notice-change";
+const CHAT_HISTORY_VISIBILITY_CHANGE_EVENT =
+  "autobot-chat-history-visibility-change";
 const dismissedConnectionNotices = new Set<string>();
 
 function IntegrationConnectionNotice({
@@ -727,6 +848,31 @@ function subscribeToConnectionNotice(onChange: () => void) {
   };
 }
 
+function subscribeToChatHistoryVisibility(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(CHAT_HISTORY_VISIBILITY_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(CHAT_HISTORY_VISIBILITY_CHANGE_EVENT, onChange);
+  };
+}
+
+function getChatHistoryVisibilityStorageKey(storageScope: string) {
+  return `${storageScope}:chat-history-open`;
+}
+
+function getChatHistoryVisibilitySnapshot(storageScope: string) {
+  try {
+    return (
+      window.localStorage.getItem(
+        getChatHistoryVisibilityStorageKey(storageScope),
+      ) !== "false"
+    );
+  } catch {
+    return true;
+  }
+}
+
 function getConnectionNoticeSnapshot(storageKey: string) {
   if (dismissedConnectionNotices.has(storageKey)) return false;
   try {
@@ -751,6 +897,18 @@ function UsageIndicator({
   plan: { name: string; used: number; limit: number; remaining: number };
   mode: ChatMode;
 }) {
+  if (mode === "byok") {
+    const label = "BYOK active. Messages use the provider key saved in this browser.";
+    return (
+      <div className="chat-usage-wrap">
+        <Badge variant="success" className="chat-usage-indicator" tabIndex={0} aria-label={label}>
+          <KeyRound aria-hidden="true" className="size-4" />
+          <span className="chat-usage-tooltip" role="tooltip">{label}</span>
+        </Badge>
+      </div>
+    );
+  }
+
   const freeActive = mode === "free" || (mode === "auto" && plan.remaining === 0);
   const ratio = plan.limit > 0 ? plan.remaining / plan.limit : 0;
   const label = freeActive
@@ -779,6 +937,7 @@ function ChatComposer({
   setMessage,
   mode,
   setMode,
+  byokActive,
   autoApprove,
   setAutoApprove,
   integrations,
@@ -790,6 +949,7 @@ function ChatComposer({
   setMessage: (message: string) => void;
   mode: ChatMode;
   setMode: (mode: ChatMode) => void;
+  byokActive: boolean;
   autoApprove: boolean;
   setAutoApprove: (value: boolean) => void;
   integrations: IntegrationStatuses;
@@ -882,7 +1042,9 @@ function ChatComposer({
               >
                 <div className="border-b border-line px-3 py-2.5">
                   <p className="text-xs font-semibold text-ink">Choose how Autobot thinks</p>
-                  <p className="mt-0.5 text-[0.68rem] text-muted">Change this anytime before sending.</p>
+                  <p className="mt-0.5 text-[0.68rem] text-muted">
+                    {byokActive ? "Your active browser key overrides platform modes." : "Change this anytime before sending."}
+                  </p>
                 </div>
                 <div className="p-1.5">
                   {CHAT_MODES.map((item) => (
@@ -890,8 +1052,9 @@ function ChatComposer({
                       key={item.value}
                       role="menuitemradio"
                       aria-checked={mode === item.value}
+                      disabled={byokActive && item.value !== "byok"}
                       onClick={() => {
-                        setMode(item.value);
+                        if (!byokActive) setMode(item.value);
                         setModeMenuOpen(false);
                       }}
                       variant="ghost"

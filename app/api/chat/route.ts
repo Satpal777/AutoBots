@@ -6,6 +6,7 @@ import { requireTrustedMutationRequest } from "@/lib/auth/request-security";
 import { getServerEnv } from "@/lib/env/server";
 import { buildAgentTools } from "@/server/agent-tools";
 import { finalizeUsage, reserveUsage, resolveAgentModel } from "@/server/agent-models";
+import { hydrateChatCards } from "@/server/chat-card-hydration";
 import { addChatMessage, getConversationMessages, requireConversation } from "@/server/chat";
 
 export const runtime = "nodejs";
@@ -24,9 +25,6 @@ const RequestSchema = z.object({
 }).superRefine((value, context) => {
   if (value.mode === "byok" && !value.byok) {
     context.addIssue({ code: "custom", path: ["byok"], message: "BYOK credentials are required." });
-  }
-  if (value.mode !== "byok" && value.byok) {
-    context.addIssue({ code: "custom", path: ["byok"], message: "BYOK credentials are only accepted in BYOK mode." });
   }
 });
 
@@ -99,8 +97,9 @@ export async function POST(request: Request) {
           if (part.type === "tool-result") {
             const extracted = extractChatCards(part.toolName, part.input, part.output, part.toolCallId);
             if (extracted.length > 0) {
-              cards.push(...extracted);
-              emit({ type: "cards", cards: extracted });
+              const hydrated = await hydrateChatCards(extracted);
+              cards.push(...hydrated);
+              emit({ type: "cards", cards: hydrated });
             }
           }
         }

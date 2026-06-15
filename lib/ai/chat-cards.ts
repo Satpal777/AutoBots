@@ -2,6 +2,7 @@ export type EmailChatCard = {
   kind: "email";
   id: string;
   threadId: string;
+  href?: string;
   from: string | null;
   subject: string | null;
   snippet: string | null;
@@ -12,6 +13,7 @@ export type EmailChatCard = {
 export type CalendarChatCard = {
   kind: "calendar";
   id: string;
+  href?: string;
   title: string | null;
   startAt: string | null;
   endAt: string | null;
@@ -131,6 +133,11 @@ function toEmailCard(value: Record<string, unknown>): EmailChatCard | null {
     kind: "email",
     id,
     threadId,
+    href: internalHref(
+      value.href,
+      `/dashboard/inbox/thread/${encodeURIComponent(threadId)}`,
+      "/dashboard/inbox/thread/",
+    ),
     from,
     subject,
     snippet,
@@ -151,6 +158,11 @@ function toCalendarCard(value: Record<string, unknown>): CalendarChatCard | null
   return {
     kind: "calendar",
     id,
+    href: internalHref(
+      value.href,
+      `/dashboard/calendar/event/${encodeURIComponent(id)}`,
+      "/dashboard/calendar/event/",
+    ),
     title,
     startAt: stringValue(start.dateTime) ?? stringValue(start.date),
     endAt: stringValue(end?.dateTime) ?? stringValue(end?.date),
@@ -254,8 +266,47 @@ function findApprovalPath(output: unknown): string | null {
 
 function deduplicateCards(cards: ChatCard[]) {
   const unique = new Map<string, ChatCard>();
-  for (const card of cards) unique.set(`${card.kind}:${card.id}`, card);
+  for (const card of cards) {
+    const key = `${card.kind}:${card.id}`;
+    const current = unique.get(key);
+    unique.set(key, current ? mergeCardDetails(current, card) : card);
+  }
   return [...unique.values()];
+}
+
+function mergeCardDetails(current: ChatCard, incoming: ChatCard): ChatCard {
+  if (current.kind === "email" && incoming.kind === "email") {
+    return {
+      ...current,
+      href: incoming.href ?? current.href,
+      from: incoming.from ?? current.from,
+      subject: incoming.subject ?? current.subject,
+      snippet: incoming.snippet ?? current.snippet,
+      receivedAt: incoming.receivedAt ?? current.receivedAt,
+      unread: current.unread || incoming.unread,
+    };
+  }
+
+  if (current.kind === "calendar" && incoming.kind === "calendar") {
+    return {
+      ...current,
+      href: incoming.href ?? current.href,
+      title: incoming.title ?? current.title,
+      startAt: incoming.startAt ?? current.startAt,
+      endAt: incoming.endAt ?? current.endAt,
+      location: incoming.location ?? current.location,
+      timeZone: incoming.timeZone ?? current.timeZone,
+      allDay: current.allDay || incoming.allDay,
+      attendeeCount: Math.max(current.attendeeCount, incoming.attendeeCount),
+    };
+  }
+
+  return incoming;
+}
+
+function internalHref(value: unknown, fallback: string, prefix: string) {
+  const href = stringValue(value);
+  return href?.startsWith(prefix) ? href : fallback;
 }
 
 function isChatCard(value: unknown): value is ChatCard {

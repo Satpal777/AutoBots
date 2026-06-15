@@ -45,8 +45,23 @@ export async function resolveAgentModel(
 ) {
   const env = getServerEnv();
   const plan = await getPlanStatus(userId);
+
+  if (byok) {
+    const provider = byok.provider;
+    const modelName = byok.model || (provider === "openrouter" ? env.OPENROUTER_FREE_MODEL : env.OPENAI_MODEL);
+    return {
+      mode: "byok" as const, provider, modelName, plan,
+      model: createOpenAI(provider === "openrouter" ? {
+        apiKey: byok.apiKey, baseURL: "https://openrouter.ai/api/v1", name: "openrouter",
+        headers: { "HTTP-Referer": env.APP_URL, "X-Title": "Autobot" },
+      } : { apiKey: byok.apiKey }).chat(modelName),
+    };
+  }
+
   let mode: ChatMode = requestedMode;
-  if (mode === "auto") mode = plan.remaining > 0 ? "premium" : "free";
+  if (mode === "auto") {
+    mode = plan.remaining > 0 && env.OPENAI_API_KEY ? "premium" : "free";
+  }
 
   if (mode === "premium") {
     if (plan.remaining <= 0) throw new Error("Premium daily allowance is exhausted.");
@@ -62,16 +77,7 @@ export async function resolveAgentModel(
     }).chat(env.OPENROUTER_FREE_MODEL), plan };
   }
 
-  if (!byok) throw new Error("Add an OpenAI or OpenRouter key in Settings.");
-  const provider = byok.provider;
-  const modelName = byok.model || (provider === "openrouter" ? env.OPENROUTER_FREE_MODEL : env.OPENAI_MODEL);
-  return {
-    mode, provider, modelName, plan,
-    model: createOpenAI(provider === "openrouter" ? {
-      apiKey: byok.apiKey, baseURL: "https://openrouter.ai/api/v1", name: "openrouter",
-      headers: { "HTTP-Referer": env.APP_URL, "X-Title": "Autobot" },
-    } : { apiKey: byok.apiKey }).chat(modelName),
-  };
+  throw new Error("Add an OpenAI or OpenRouter key in Settings.");
 }
 
 export async function reserveUsage(input: {

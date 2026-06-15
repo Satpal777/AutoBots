@@ -13,7 +13,9 @@ import {
 import { CalendarSubmitButton } from "@/components/calendar/calendar-submit-button";
 import { PageHeader } from "@/components/dashboard/workspace-panels";
 import { PlusIcon, RefreshIcon } from "@/components/ui/icons";
+import { requireSession } from "@/lib/auth/session";
 import { getCalendarAgenda, type CalendarAgenda } from "@/server/calendar";
+import { getByokStorageKey } from "@/server/byok";
 import { getGoogleIntegrationStatuses } from "@/server/google-integrations";
 
 type CalendarPageProps = {
@@ -27,15 +29,17 @@ const StartDateSchema = z
   .regex(/^\d{4}-\d{2}-\d{2}$/);
 
 export default async function CalendarPage({ searchParams }: CalendarPageProps) {
-  const [statuses, params] = await Promise.all([
+  const [statuses, params, session] = await Promise.all([
     getGoogleIntegrationStatuses(),
     searchParams,
+    requireSession(),
   ]);
   const viewResult = CalendarViewSchema.safeParse(getStringParam(params.view));
   const startResult = StartDateSchema.safeParse(getStringParam(params.start));
   const view = viewResult.success ? viewResult.data : "agenda";
   const startDate = startResult.success ? startResult.data : undefined;
   const status = getStringParam(params.status);
+  const refreshedAt = getTimestampParam(params.refreshedAt);
 
   if (statuses.googlecalendar !== "connected") {
     return (
@@ -90,7 +94,12 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
               <input type="hidden" name="startDate" value={startDate ?? ""} />
               <input type="hidden" name="days" value={view === "week" ? 7 : 14} />
               <input type="hidden" name="view" value={view} />
-              <CalendarSubmitButton pendingLabel="Refreshing..." variant="quiet">
+              <CalendarSubmitButton
+                pendingLabel="Refreshing..."
+                variant="quiet"
+                refreshAttentionStorageScope={getByokStorageKey(session.user.id)}
+                clearRefreshAttentionThrough={refreshedAt}
+              >
                 <RefreshIcon className="size-4" />
                 Refresh
               </CalendarSubmitButton>
@@ -112,4 +121,9 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
 function getStringParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function getTimestampParam(value: string | string[] | undefined) {
+  const timestamp = Number(getStringParam(value));
+  return Number.isSafeInteger(timestamp) && timestamp > 0 ? timestamp : undefined;
 }

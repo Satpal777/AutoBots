@@ -31,6 +31,7 @@ export function GmailInboxList({ initialThreads, initialNextPageToken, query, by
       const page = await response.json() as { threads: GmailMailboxThread[]; nextPageToken: string | null };
       setThreads((current) => mergeThreads(current, page.threads));
     };
+    void refreshLatest();
     const timer = window.setInterval(refreshLatest, 60_000);
     return () => window.clearInterval(timer);
   }, [byokStorageKey, query]);

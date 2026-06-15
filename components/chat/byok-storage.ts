@@ -15,7 +15,6 @@ const LocalCredentialSchema = z.object({
 
 const StoredByokSchema = z.object({
   activeProvider: z.enum(["openai", "openrouter"]).optional(),
-  intelligenceMode: z.enum(["free", "byok"]).optional(),
   credentials: z.object({
     openai: LocalCredentialSchema.optional(),
     openrouter: LocalCredentialSchema.optional(),
@@ -40,13 +39,7 @@ export function getLocalByokSnapshot(storageKey: string): StoredByok {
 }
 
 export function getLocalIntelligenceCredential(storageKey: string): ByokCredential | undefined {
-  const stored = readStoredByok(storageKey);
-  return stored.intelligenceMode === "byok" ? getLocalByokCredential(storageKey) : undefined;
-}
-
-export function setLocalIntelligenceMode(storageKey: string, mode: "free" | "byok") {
-  const stored = readStoredByok(storageKey);
-  writeStoredByok(storageKey, { ...stored, intelligenceMode: mode });
+  return getLocalByokCredential(storageKey);
 }
 
 export function saveLocalByokCredential(storageKey: string, credential: ByokCredential) {

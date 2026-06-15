@@ -86,7 +86,7 @@ export async function refreshGmailInboxAction() {
     redirect("/dashboard/inbox?status=error");
   }
 
-  redirect("/dashboard/inbox?status=refreshed");
+  redirect(`/dashboard/inbox?status=refreshed&refreshedAt=${Date.now()}`);
 }
 
 export async function archiveGmailThreadAction(formData: FormData) {

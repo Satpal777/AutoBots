@@ -9,7 +9,6 @@ import {
   getLocalIntelligenceCredential,
   getLocalByokSnapshot,
   saveLocalByokCredential,
-  setLocalIntelligenceMode,
   subscribeToLocalByok,
 } from "@/components/chat/byok-storage";
 
@@ -22,7 +21,10 @@ export function LocalByokSettings({ storageKey }: { storageKey: string }) {
     () => "{}",
   );
   const stored = JSON.parse(snapshot) as ReturnType<typeof getLocalByokSnapshot>;
-  const intelligenceMode = stored.intelligenceMode ?? "free";
+  const activeProvider = stored.activeProvider;
+  const activeCredential = activeProvider
+    ? stored.credentials?.[activeProvider]
+    : undefined;
 
   function saveCredential(provider: ByokProvider, event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,10 +39,6 @@ export function LocalByokSettings({ storageKey }: { storageKey: string }) {
   async function reclassifyInbox() {
     if (reclassifying) return;
     const byok = getLocalIntelligenceCredential(storageKey);
-    if (intelligenceMode === "byok" && !byok) {
-      setReclassifyStatus("Save and select a BYOK key before reclassifying.");
-      return;
-    }
     setReclassifying(true);
     setReclassifyStatus(null);
     try {
@@ -65,12 +63,18 @@ export function LocalByokSettings({ storageKey }: { storageKey: string }) {
     <section className="product-panel mt-7 p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-ink">Inbox intelligence model</h2>
-          <p className="mt-1 text-sm text-muted">Free uses Autobot&apos;s OpenRouter free model. BYOK uses the active browser key below. Changing models affects new email automatically.</p>
+          <h2 className="text-base font-semibold text-ink">AI request priority</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+            Your active BYOK key is always used first for chat and browser-initiated inbox intelligence. Platform models are used only when no browser key is active.
+          </p>
         </div>
-        <div className="product-tab-list">
-          {(["free", "byok"] as const).map((mode) => <button key={mode} type="button" aria-pressed={intelligenceMode === mode} onClick={() => setLocalIntelligenceMode(storageKey, mode)} className="product-tab">{mode === "free" ? "Free model" : "Use BYOK"}</button>)}
-        </div>
+        <p className={`shrink-0 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
+          activeCredential
+            ? "bg-success-soft text-success"
+            : "bg-surface-soft text-muted"
+        }`}>
+          {activeCredential ? `BYOK active: ${activeProvider}` : "Platform fallback active"}
+        </p>
       </div>
       <div className="mt-5 flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-2xl text-xs leading-5 text-muted">After changing models, reclassify recent cached email to refresh AI-generated priority, category, follow-up, and summaries. Anything you changed manually remains locked.</p>

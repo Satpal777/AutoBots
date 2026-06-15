@@ -29,7 +29,9 @@ export async function getDailyBriefing(
   statuses: GoogleIntegrationStatuses,
 ): Promise<DailyBriefing> {
   const [inbox, agenda] = await Promise.all([
-    statuses.gmail === "connected" ? getGmailInbox().catch(() => null) : null,
+    statuses.gmail === "connected"
+      ? getGmailInbox(undefined, undefined, undefined, false).catch(() => null)
+      : null,
     statuses.googlecalendar === "connected"
       ? getCalendarAgenda({ days: 1 }).catch(() => null)
       : null,

@@ -2,14 +2,31 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import {
+  getLocalByokCredential,
+  getLocalByokSnapshot,
+  subscribeToLocalByok,
+} from "@/components/chat/byok-storage";
 import { CloseIcon, SparklesIcon } from "@/components/ui/icons";
 
 const STORAGE_KEY = "autobot-inbox-intelligence-notice:v1";
 const CHANGE_EVENT = "autobot-inbox-intelligence-notice-change";
 let dismissedForSession = false;
 
-export function InboxIntelligenceNotice() {
+export function InboxIntelligenceNotice({
+  byokStorageKey,
+}: {
+  byokStorageKey: string;
+}) {
   const visible = useSyncExternalStore(subscribe, getSnapshot, () => true);
+  const byokSnapshot = useSyncExternalStore(
+    subscribeToLocalByok,
+    () => JSON.stringify(getLocalByokSnapshot(byokStorageKey)),
+    () => "{}",
+  );
+  const byok = byokSnapshot === "{}"
+    ? undefined
+    : getLocalByokCredential(byokStorageKey);
 
   if (!visible) return null;
 
@@ -17,13 +34,9 @@ export function InboxIntelligenceNotice() {
     <div className="mt-5 flex items-start gap-2 rounded-lg border border-success/20 bg-success-soft px-3 py-2 text-xs font-medium text-success">
       <SparklesIcon aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
       <p className="min-w-0 flex-1 leading-5">
-        Free model organizes this inbox.{" "}
+        {byok ? `${byok.provider === "openai" ? "OpenAI" : "OpenRouter"} BYOK organizes this inbox.` : "Free model organizes this inbox."}{" "}
         <Link href="/dashboard/settings/ai" className="font-semibold underline underline-offset-2">
-          Use BYOK for better accuracy
-        </Link>{" "}
-        or{" "}
-        <Link href="/dashboard/upgrade" className="font-semibold underline underline-offset-2">
-          contact admin to upgrade
+          {byok ? "Manage AI key" : "Add BYOK for better accuracy"}
         </Link>
         .
       </p>

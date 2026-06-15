@@ -91,6 +91,7 @@ export async function getGmailInbox(
   query?: string,
   pageToken?: string,
   intelligenceByok?: IntelligenceByok,
+  classifyNew = true,
 ): Promise<GmailInboxPage> {
   const tenant = await getCorsairTenant();
   const userId = await getCorsairTenantId();
@@ -110,9 +111,11 @@ export async function getGmailInbox(
   }
 
   const grouped = groupMessagesByThread(page.messages).slice(0, GMAIL_PAGE_SIZE);
-  await analyzeNewGmailEntities(userId, grouped.map((thread) => thread.id).flatMap((threadId) =>
-    page.messages.filter((message) => message.data.threadId === threadId).map((message) => message.entity_id),
-  ), intelligenceByok);
+  if (classifyNew) {
+    await analyzeNewGmailEntities(userId, grouped.map((thread) => thread.id).flatMap((threadId) =>
+      page.messages.filter((message) => message.data.threadId === threadId).map((message) => message.entity_id),
+    ), intelligenceByok);
+  }
   const [intelligence, threadOverrides] = await Promise.all([
     getEntityIntelligenceMap(userId, grouped.flatMap((thread) => thread.intelligenceEntityIds)),
     getUserThreadIntelligenceMap(userId, grouped.map((thread) => thread.id)),
@@ -161,7 +164,13 @@ export async function getGmailThread(
     limit: 100,
   });
 
-  if (messages.length === 0) {
+  const onlyThinMetadata = messages.length > 0 && messages.every((message) =>
+    !message.data.from?.trim()
+    && !message.data.to?.trim()
+    && !message.data.subject?.trim()
+  );
+
+  if (messages.length === 0 || onlyThinMetadata) {
     await refreshGmailThread(tenant, threadId);
     messages = await tenant.gmail.db.messages.search({
       data: { threadId },

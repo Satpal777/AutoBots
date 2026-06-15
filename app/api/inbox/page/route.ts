@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     pageToken: url.searchParams.get("pageToken") || undefined,
   });
   if (!parsed.success) return Response.json({ error: "Invalid inbox page request." }, { status: 400 });
-  return Response.json(await getGmailInbox(parsed.data.q, parsed.data.pageToken), {
+  return Response.json(await getGmailInbox(parsed.data.q, parsed.data.pageToken, undefined, false), {
     headers: { "Cache-Control": "private, no-store" },
   });
 }

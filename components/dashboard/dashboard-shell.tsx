@@ -1,7 +1,9 @@
 "use client";
 
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSyncExternalStore } from "react";
 
 import { AutobotLogo } from "@/components/brand/autobot-logo";
 import { SignOutButton } from "@/components/auth/sign-out-button";
@@ -23,6 +25,9 @@ const navigation = [
   { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
+const DASHBOARD_RAIL_STORAGE_KEY = "autobot-dashboard-rail-collapsed";
+const DASHBOARD_RAIL_CHANGE_EVENT = "autobot-dashboard-rail-change";
+
 export function DashboardShell({
   children,
   email,
@@ -34,6 +39,19 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const isChat = pathname.startsWith("/dashboard/chat");
+  const railCollapsed = useSyncExternalStore(
+    subscribeToDashboardRail,
+    getDashboardRailSnapshot,
+    () => false,
+  );
+
+  function toggleRail() {
+    window.localStorage.setItem(
+      DASHBOARD_RAIL_STORAGE_KEY,
+      railCollapsed ? "expanded" : "collapsed",
+    );
+    window.dispatchEvent(new Event(DASHBOARD_RAIL_CHANGE_EVENT));
+  }
 
   return (
     <div
@@ -41,29 +59,47 @@ export function DashboardShell({
         isChat ? "min-h-screen lg:h-screen lg:overflow-hidden" : "min-h-screen"
       }`}
     >
-      <aside className="dashboard-rail fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-line lg:block">
-        <div className="flex h-full flex-col p-4">
-          <div className="px-2 py-2">
-            <AutobotLogo />
+      <aside className={`dashboard-rail fixed inset-y-0 left-0 z-30 hidden border-r border-line transition-[width] duration-200 lg:block ${
+        railCollapsed ? "w-[4.5rem]" : "w-60"
+      }`}>
+        <div className={`flex h-full flex-col ${railCollapsed ? "p-3" : "p-4"}`}>
+          <div className={`flex gap-2 py-2 ${railCollapsed ? "flex-col items-center" : "items-center justify-between px-2"}`}>
+            <AutobotLogo showName={!railCollapsed} />
+            <button
+              type="button"
+              onClick={toggleRail}
+              aria-label={railCollapsed ? "Expand dashboard sidebar" : "Collapse dashboard sidebar"}
+              title={railCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="product-icon-button grid size-9 min-h-0 shrink-0 place-items-center"
+            >
+              {railCollapsed
+                ? <PanelLeftOpen aria-hidden="true" className="size-4" />
+                : <PanelLeftClose aria-hidden="true" className="size-4" />}
+            </button>
           </div>
 
-          <DashboardNavigation />
+          <DashboardNavigation collapsed={railCollapsed} />
 
           <div className="mt-auto border-t border-line pt-3">
-            <div className="mb-2 flex items-center justify-between rounded-lg px-2 py-1">
-              <span className="text-xs font-semibold text-muted">Appearance</span>
+            <div className={`mb-2 flex rounded-lg ${railCollapsed ? "justify-center py-1" : "items-center justify-between px-2 py-1"}`}>
+              {railCollapsed ? null : <span className="text-xs font-semibold text-muted">Appearance</span>}
               <ThemeToggle />
             </div>
-            <div className="mb-2 flex items-center gap-3 rounded-lg p-2">
+            <div
+              title={railCollapsed ? `${name} (${email})` : undefined}
+              className={`mb-2 flex rounded-lg ${railCollapsed ? "justify-center py-1" : "items-center gap-3 p-2"}`}
+            >
               <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gold-soft text-xs font-bold text-forest">
                 {getInitials(name)}
               </span>
-              <div className="min-w-0">
+              <div className={railCollapsed ? "hidden" : "min-w-0"}>
                 <p className="truncate text-sm font-semibold text-ink">{name}</p>
                 <p className="mt-0.5 truncate text-xs text-muted">{email}</p>
               </div>
             </div>
-            <SignOutButton />
+            <div className={railCollapsed ? "flex justify-center" : ""}>
+              <SignOutButton compact={railCollapsed} />
+            </div>
           </div>
         </div>
       </aside>
@@ -80,7 +116,9 @@ export function DashboardShell({
       </header>
 
       <main
-        className={`min-w-0 lg:pl-60 ${
+        className={`min-w-0 transition-[padding] duration-200 ${
+          railCollapsed ? "lg:pl-[4.5rem]" : "lg:pl-60"
+        } ${
           isChat ? "lg:h-screen lg:overflow-hidden" : ""
         }`}
       >
@@ -99,7 +137,13 @@ export function DashboardShell({
   );
 }
 
-function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
+function DashboardNavigation({
+  mobile = false,
+  collapsed = false,
+}: {
+  mobile?: boolean;
+  collapsed?: boolean;
+}) {
   const pathname = usePathname();
 
   return (
@@ -120,6 +164,8 @@ function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
+            aria-label={collapsed ? label : undefined}
+            title={collapsed ? label : undefined}
             className={
               mobile
                 ? `flex min-w-fit items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
@@ -127,7 +173,9 @@ function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
                       ? "bg-surface-soft text-forest"
                       : "text-muted hover:text-forest"
                   }`
-                : `flex items-center gap-3 rounded-xl px-3 py-3 font-semibold transition ${
+                : `flex items-center rounded-xl py-3 font-semibold transition ${
+                    collapsed ? "justify-center px-0" : "gap-3 px-3"
+                  } ${
                     active
                       ? "dashboard-nav-active"
                       : "text-muted hover:bg-surface-soft hover:text-forest"
@@ -135,12 +183,29 @@ function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
             }
           >
             <Icon className={`size-4 ${active && !mobile ? "text-forest" : ""}`} />
-            {label}
+            {collapsed ? null : label}
           </Link>
         );
       })}
     </nav>
   );
+}
+
+function subscribeToDashboardRail(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(DASHBOARD_RAIL_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(DASHBOARD_RAIL_CHANGE_EVENT, onChange);
+  };
+}
+
+function getDashboardRailSnapshot() {
+  try {
+    return window.localStorage.getItem(DASHBOARD_RAIL_STORAGE_KEY) === "collapsed";
+  } catch {
+    return false;
+  }
 }
 
 function getInitials(name: string): string {
