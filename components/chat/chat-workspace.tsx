@@ -15,6 +15,7 @@ import {
   Mail,
   MailSearch,
   MapPin,
+  MessagesSquare,
   Pencil,
   PanelRightClose,
   PanelRightOpen,
@@ -108,6 +109,7 @@ export function ChatWorkspace({
   const [error, setError] = useState("");
   const [showLatestButton, setShowLatestButton] = useState(false);
   const [messageListScrolling, setMessageListScrolling] = useState(false);
+  const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const historyOpen = useSyncExternalStore(
     subscribeToChatHistoryVisibility,
     () => getChatHistoryVisibilitySnapshot(byokStorageKey),
@@ -251,6 +253,30 @@ export function ChatWorkspace({
     };
   }, []);
 
+  useEffect(() => {
+    if (!mobileHistoryOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMobileHistoryOpen(false);
+    }
+
+    const desktopViewport = window.matchMedia("(min-width: 768px)");
+    function handleViewportChange(event: MediaQueryListEvent) {
+      if (event.matches) setMobileHistoryOpen(false);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    desktopViewport.addEventListener("change", handleViewportChange);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      desktopViewport.removeEventListener("change", handleViewportChange);
+    };
+  }, [mobileHistoryOpen]);
+
   async function send() {
     const content = message.trim();
     if (!content || pending) return;
@@ -382,9 +408,21 @@ export function ChatWorkspace({
           </div>
           <div className="flex items-center gap-2">
             <Button
+              onClick={() => setMobileHistoryOpen(true)}
+              variant="secondary"
+              size="icon"
+              className="md:hidden"
+              aria-label="Open conversations"
+              title="Conversations"
+              aria-expanded={mobileHistoryOpen}
+            >
+              <MessagesSquare aria-hidden="true" className="size-4" />
+            </Button>
+            <Button
               onClick={toggleHistory}
               variant="secondary"
               size="icon"
+              className="hidden md:inline-flex"
               aria-label={historyOpen ? "Hide chat history" : "Show chat history"}
               title={historyOpen ? "Hide chat history" : "Show chat history"}
             >
@@ -468,14 +506,103 @@ export function ChatWorkspace({
         </div>
       </Card>
 
-      {historyOpen ? <Card className="chat-history-panel flex min-h-0 flex-col overflow-hidden p-3 md:h-full">
-        <div className="flex shrink-0 items-center justify-between gap-3 px-1 pb-3">
-          <div>
-            <p className="text-sm font-semibold text-ink">Conversations</p>
-            <p className="mt-0.5 text-xs text-muted">{conversations.length} saved</p>
-          </div>
+      {historyOpen ? (
+        <Card className="chat-history-panel hidden min-h-0 flex-col overflow-hidden p-3 md:flex md:h-full">
+          <ConversationHistory
+            conversations={conversations}
+            activeId={activeId}
+            plan={plan}
+            pending={pending}
+            onCreateNew={() => void createNew()}
+            onRenameActive={() => void renameActive()}
+            onDeleteActive={() => void deleteActive()}
+          />
+        </Card>
+      ) : null}
+
+      {mobileHistoryOpen ? createPortal(
+        <div
+          className="chat-history-mobile-backdrop fixed inset-0 z-[100] md:hidden"
+          onClick={() => setMobileHistoryOpen(false)}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label="Conversations"
+            className="chat-history-mobile-menu flex max-h-[min(72svh,38rem)] flex-col overflow-hidden bg-surface p-3"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <ConversationHistory
+              conversations={conversations}
+              activeId={activeId}
+              plan={plan}
+              pending={pending}
+              showPlan={false}
+              onClose={() => setMobileHistoryOpen(false)}
+              onSelectConversation={() => setMobileHistoryOpen(false)}
+              onCreateNew={() => {
+                setMobileHistoryOpen(false);
+                void createNew();
+              }}
+              onRenameActive={() => void renameActive()}
+              onDeleteActive={() => {
+                setMobileHistoryOpen(false);
+                void deleteActive();
+              }}
+            />
+          </section>
+        </div>,
+        document.body,
+      ) : null}
+    </div>
+  );
+}
+
+function ConversationHistory({
+  conversations,
+  activeId,
+  plan,
+  pending,
+  showPlan = true,
+  onClose,
+  onSelectConversation,
+  onCreateNew,
+  onRenameActive,
+  onDeleteActive,
+}: {
+  conversations: Conversation[];
+  activeId: string;
+  plan: { name: string; used: number; limit: number; remaining: number };
+  pending: boolean;
+  showPlan?: boolean;
+  onClose?: () => void;
+  onSelectConversation?: () => void;
+  onCreateNew: () => void;
+  onRenameActive: () => void;
+  onDeleteActive: () => void;
+}) {
+  return (
+    <>
+      <div className="flex shrink-0 items-center justify-between gap-3 px-1 pb-3">
+        <div>
+          <p className="text-sm font-semibold text-ink">Conversations</p>
+          <p className="mt-0.5 text-xs text-muted">{conversations.length} saved</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {onClose ? (
+            <Button
+              onClick={onClose}
+              variant="secondary"
+              size="icon"
+              aria-label="Close conversations"
+              title="Close conversations"
+              autoFocus
+            >
+              <X aria-hidden="true" className="size-4" />
+            </Button>
+          ) : null}
           <Button
-            onClick={createNew}
+            onClick={onCreateNew}
             disabled={pending}
             aria-label="Create new conversation"
             title="Create new conversation"
@@ -484,48 +611,51 @@ export function ChatWorkspace({
             <Plus aria-hidden="true" className="size-4" />
           </Button>
         </div>
+      </div>
 
-        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain border-y border-line py-2">
-          {conversations.map((conversation) => (
-            <Button
-              key={conversation.id}
-              asChild
-              variant={conversation.id === activeId ? "subtle" : "ghost"}
-              size="sm"
-              className="w-full justify-start"
+      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain border-y border-line py-2">
+        {conversations.map((conversation) => (
+          <Button
+            key={conversation.id}
+            asChild
+            variant={conversation.id === activeId ? "subtle" : "ghost"}
+            size="sm"
+            className="w-full justify-start"
+          >
+            <Link
+              href={`/dashboard/chat?conversation=${conversation.id}`}
+              onClick={onSelectConversation}
+              aria-current={conversation.id === activeId ? "page" : undefined}
+              className="truncate"
             >
-              <Link
-                href={`/dashboard/chat?conversation=${conversation.id}`}
-                aria-current={conversation.id === activeId ? "page" : undefined}
-                className="truncate"
-              >
-                {conversation.title}
-              </Link>
-            </Button>
-          ))}
+              {conversation.title}
+            </Link>
+          </Button>
+        ))}
+      </div>
+
+      <div className="shrink-0 pt-3">
+        <div className="flex justify-end gap-2">
+          <Button
+            onClick={onRenameActive}
+            aria-label="Rename conversation"
+            title="Rename conversation"
+            variant="secondary"
+            size="icon"
+          >
+            <Pencil aria-hidden="true" className="size-4" />
+          </Button>
+          <Button
+            onClick={onDeleteActive}
+            aria-label="Delete conversation"
+            title="Delete conversation"
+            variant="destructive"
+            size="icon"
+          >
+            <Trash2 aria-hidden="true" className="size-4" />
+          </Button>
         </div>
-
-        <div className="shrink-0 pt-3">
-          <div className="flex justify-end gap-2">
-            <Button
-              onClick={renameActive}
-              aria-label="Rename conversation"
-              title="Rename conversation"
-              variant="secondary"
-              size="icon"
-            >
-              <Pencil aria-hidden="true" className="size-4" />
-            </Button>
-            <Button
-              onClick={deleteActive}
-              aria-label="Delete conversation"
-              title="Delete conversation"
-              variant="destructive"
-              size="icon"
-            >
-              <Trash2 aria-hidden="true" className="size-4" />
-            </Button>
-          </div>
+        {showPlan ? (
           <Card className="mt-3 border-0 bg-surface-soft p-3">
             <div className="flex items-center justify-between text-xs font-semibold">
               <span>{plan.name}</span><span>{plan.used}/{plan.limit}</span>
@@ -537,9 +667,9 @@ export function ChatWorkspace({
               <Link href="/dashboard/upgrade">View plans</Link>
             </Button>
           </Card>
-        </div>
-      </Card> : null}
-    </div>
+        ) : null}
+      </div>
+    </>
   );
 }
 

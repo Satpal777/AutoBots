@@ -1,9 +1,10 @@
 "use client";
 
+import { CornerDownLeft, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { replyToGmailThreadAction } from "@/app/(dashboard)/dashboard/inbox/actions";
 import { getLocalByokCredential } from "@/components/chat/byok-storage";
-import { SendIcon, SparklesIcon } from "@/components/ui/icons";
+import { SendIcon } from "@/components/ui/icons";
 import { GmailSubmitButton } from "@/components/gmail/gmail-submit-button";
 
 export function GmailReplyComposer({
@@ -102,20 +103,44 @@ export function GmailReplyComposer({
           aria-live="polite"
           className="flex items-center gap-1.5 text-xs font-medium text-muted"
         >
-          <SparklesIcon aria-hidden="true" className="size-3.5 text-forest" />
+          <Sparkles aria-hidden="true" className="size-3.5 text-forest" />
           {getSuggestionStatus(suggestionState, body, suggestion)}
+          {suggestionState === "ready" && suggestion && !body ? (
+            <>
+              <span className="hidden sm:inline">
+                {" "}Press{" "}
+                <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 font-semibold text-ink">
+                  Tab
+                </kbd>{" "}
+                to insert.
+              </span>
+              <span className="sm:hidden"> Tap the suggestion below to insert.</span>
+            </>
+          ) : null}
         </p>
-        {suggestion && !body ? (
-          <button
-            type="button"
-            onClick={insertSuggestion}
-            className="product-button-secondary inline-flex min-h-8 items-center gap-1.5 px-2.5 text-xs sm:hidden"
-          >
-            <SparklesIcon aria-hidden="true" className="size-3.5" />
-            Use suggestion
-          </button>
-        ) : null}
       </div>
+      {suggestion && !body ? (
+        <button
+          type="button"
+          onClick={insertSuggestion}
+          className="mt-2 w-full rounded-lg border border-forest/25 bg-surface px-3 py-3 text-left active:translate-y-px sm:hidden"
+          aria-label="Insert suggested reply"
+        >
+          <span className="flex items-center justify-between gap-3 text-xs font-semibold text-forest">
+            <span className="inline-flex items-center gap-1.5">
+              <Sparkles aria-hidden="true" className="size-3.5" />
+              Suggested reply
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1 text-muted">
+              Tap to insert
+              <CornerDownLeft aria-hidden="true" className="size-3.5" />
+            </span>
+          </span>
+          <span className="mt-2 line-clamp-3 block text-sm leading-5 text-ink/80">
+            {suggestion}
+          </span>
+        </button>
+      ) : null}
       <div className="mt-3 flex justify-end">
         <GmailSubmitButton pendingLabel="Sending reply...">
           <SendIcon className="size-4" />
@@ -135,13 +160,5 @@ function getSuggestionStatus(
   if (state === "unavailable") return "Suggestion unavailable. You can still write a reply.";
   if (body === suggestion) return "Suggested reply inserted. Review before sending.";
   if (body) return "Your reply";
-  return (
-    <>
-      Suggested reply ready. Press{" "}
-      <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 font-semibold text-ink">
-        Tab
-      </kbd>{" "}
-      to insert.
-    </>
-  );
+  return "Suggested reply ready.";
 }
