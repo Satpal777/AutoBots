@@ -830,16 +830,6 @@ body {
   background: var(--surface-soft);
 }
 
-.chat-icon-danger {
-  color: oklch(0.55 0.18 28);
-}
-
-.chat-icon-danger:hover {
-  border-color: oklch(0.55 0.18 28 / 0.45);
-  background: oklch(0.55 0.18 28 / 0.1);
-  color: oklch(0.62 0.2 28);
-}
-
 .chat-composer {
   border: 1px solid var(--line);
   border-radius: 0.75rem;
@@ -949,50 +939,6 @@ body {
   }
 }
 
-.chat-composer-icon {
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  flex: none;
-  place-items: center;
-  border-radius: 0.5rem;
-  color: var(--muted);
-  transition:
-    background-color 160ms ease-out,
-    color 160ms ease-out;
-}
-
-.chat-composer-icon:hover {
-  background: var(--surface-soft);
-  color: var(--forest);
-}
-
-.chat-prompt-chip {
-  display: inline-flex;
-  min-height: 2.25rem;
-  align-items: center;
-  gap: 0.45rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  padding-inline: 0.8rem;
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  transition:
-    border-color 160ms ease-out,
-    background-color 160ms ease-out,
-    color 160ms ease-out,
-    transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.chat-prompt-chip:hover {
-  border-color: var(--forest);
-  background: var(--surface-soft);
-  color: var(--forest);
-  transform: translateY(-1px);
-}
-
 .chat-usage-wrap {
   display: flex;
   min-height: 2.25rem;
@@ -1012,26 +958,6 @@ body {
   font-size: 0.68rem;
   font-weight: 700;
   cursor: help;
-}
-
-.chat-usage-healthy {
-  background: var(--success-soft);
-  color: var(--success);
-}
-
-.chat-usage-warning {
-  background: var(--gold-soft);
-  color: oklch(0.48 0.105 72);
-}
-
-.chat-usage-critical {
-  background: oklch(0.94 0.045 28);
-  color: oklch(0.52 0.18 28);
-}
-
-.chat-usage-free {
-  background: var(--surface-soft);
-  color: var(--forest);
 }
 
 .chat-usage-tooltip {
@@ -1060,15 +986,6 @@ body {
 .chat-usage-indicator:focus-visible .chat-usage-tooltip {
   opacity: 1;
   transform: translate(-50%, 0);
-}
-
-:root:is([data-theme="dark"], .dark) .chat-usage-warning {
-  color: var(--gold);
-}
-
-:root:is([data-theme="dark"], .dark) .chat-usage-critical {
-  background: oklch(0.25 0.055 28);
-  color: oklch(0.75 0.14 28);
 }
 
 .autobot-signal {
