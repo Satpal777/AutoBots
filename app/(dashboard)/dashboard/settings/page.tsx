@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { IntegrationActionButton } from "@/components/integrations/integration-action-button";
 import { PageHeader } from "@/components/dashboard/workspace-panels";
+import { LocalByokSettings } from "@/components/settings/local-byok-settings";
 import {
   AlertIcon,
   CalendarIcon,
@@ -14,21 +15,25 @@ import {
   GoogleIntegrationPluginSchema,
   googleIntegrationDetails,
 } from "@/lib/integrations/google";
+import { requireSession } from "@/lib/auth/session";
+import { getByokStorageKey } from "@/server/byok";
 import { getGoogleIntegrationStatuses } from "@/server/google-integrations";
 
 import {
   connectGoogleIntegrationAction,
   disconnectGoogleIntegrationAction,
 } from "../actions";
+import { deleteChatHistoryAction } from "./ai/actions";
 
 type SettingsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
-  const [statuses, params] = await Promise.all([
+  const [statuses, params, session] = await Promise.all([
     getGoogleIntegrationStatuses(),
     searchParams,
+    requireSession(),
   ]);
   const notice = getNotice(params);
 
@@ -36,58 +41,85 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     <>
       <PageHeader
         label="Settings"
-        title="Connected apps"
-        description="Choose which apps Autobot can use for your workspace."
-        action={
-          <Link href="/dashboard/settings/ai" className="product-button-secondary inline-flex items-center px-4">
-            AI settings
-          </Link>
-        }
+        title="Workspace settings"
+        description="Manage connected apps, AI providers, and saved chat data."
       />
 
       {notice ? <SettingsNotice notice={notice} /> : null}
 
-      <div className="mt-7 grid items-start gap-5 xl:grid-cols-[1fr_20rem]">
-        <section className="product-panel divide-y divide-line">
-          {(Object.keys(googleIntegrationDetails) as GoogleIntegrationPlugin[]).map(
-            (plugin) => (
-              <IntegrationRow key={plugin} plugin={plugin} status={statuses[plugin]} />
-            ),
-          )}
-        </section>
+      <nav aria-label="Settings sections" className="product-tab-list mt-7">
+        <Link href="#connected-apps" className="product-tab">Connected apps</Link>
+        <Link href="#ai-and-data" className="product-tab">AI and data</Link>
+      </nav>
 
-        <aside className="product-panel-muted overflow-hidden">
-          <div className="dashboard-security-visual grid min-h-44 place-items-center border-b border-line p-6">
-            <div className="relative grid size-20 place-items-center rounded-full bg-forest text-white">
-              <span className="absolute inset-[-0.65rem] rounded-full border border-forest/20" />
-              <ShieldIcon className="size-8" />
-              <span className="absolute -right-1 top-1 grid size-6 place-items-center rounded-full bg-gold-soft text-forest">
-                <CheckIcon className="size-3.5" />
-              </span>
+      <section id="connected-apps" className="scroll-mt-6 pt-8">
+        <h2 className="text-lg font-semibold text-ink">Connected apps</h2>
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+          Choose which apps Autobot can use for your workspace.
+        </p>
+
+        <div className="mt-5 grid items-start gap-5 xl:grid-cols-[1fr_20rem]">
+          <div className="product-panel divide-y divide-line">
+            {(Object.keys(googleIntegrationDetails) as GoogleIntegrationPlugin[]).map(
+              (plugin) => (
+                <IntegrationRow key={plugin} plugin={plugin} status={statuses[plugin]} />
+              ),
+            )}
+          </div>
+
+          <aside className="product-panel-muted overflow-hidden">
+            <div className="dashboard-security-visual grid min-h-44 place-items-center border-b border-line p-6">
+              <div className="relative grid size-20 place-items-center rounded-full bg-forest text-white">
+                <span className="absolute inset-[-0.65rem] rounded-full border border-forest/20" />
+                <ShieldIcon className="size-8" />
+                <span className="absolute -right-1 top-1 grid size-6 place-items-center rounded-full bg-gold-soft text-forest">
+                  <CheckIcon className="size-3.5" />
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="p-5">
-            <p className="text-xs font-medium text-muted">Your privacy</p>
-            <h2 className="mt-2 text-base font-semibold text-ink">
-              You control every connection
-            </h2>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-muted">
-              <li className="flex gap-2">
-                <CheckIcon className="mt-1 size-4 shrink-0 text-forest" />
-                Every connected app has separate permissions.
-              </li>
-              <li className="flex gap-2">
-                <CheckIcon className="mt-1 size-4 shrink-0 text-forest" />
-                Disconnect an app whenever you choose.
-              </li>
-              <li className="flex gap-2">
-                <CheckIcon className="mt-1 size-4 shrink-0 text-forest" />
-                Your workspace is available only to your account.
-              </li>
-            </ul>
-          </div>
-        </aside>
-      </div>
+            <div className="p-5">
+              <p className="text-xs font-medium text-muted">Your privacy</p>
+              <h3 className="mt-2 text-base font-semibold text-ink">
+                You control every connection
+              </h3>
+              <ul className="mt-4 space-y-3 text-sm leading-6 text-muted">
+                <li className="flex gap-2">
+                  <CheckIcon className="mt-1 size-4 shrink-0 text-forest" />
+                  Every connected app has separate permissions.
+                </li>
+                <li className="flex gap-2">
+                  <CheckIcon className="mt-1 size-4 shrink-0 text-forest" />
+                  Disconnect an app whenever you choose.
+                </li>
+                <li className="flex gap-2">
+                  <CheckIcon className="mt-1 size-4 shrink-0 text-forest" />
+                  Your workspace is available only to your account.
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="ai-and-data" className="mt-10 scroll-mt-6 border-t border-line pt-8">
+        <h2 className="text-lg font-semibold text-ink">AI and data</h2>
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+          Choose your model provider and manage saved Autobot conversations.
+        </p>
+        <div className="product-notice mt-5 px-4 py-3 text-sm font-medium">
+          BYOK keys stay in this browser profile. When a key is active, Autobot uses it first for chat, reply suggestions, and browser-initiated inbox intelligence.
+        </div>
+        <LocalByokSettings storageKey={getByokStorageKey(session.user.id)} />
+        <section className="product-panel-muted mt-5 p-5 sm:p-6">
+          <h3 className="text-base font-semibold text-ink">Chat history</h3>
+          <p className="mt-1 text-sm text-muted">
+            Delete every saved Autobot conversation and message.
+          </p>
+          <form action={deleteChatHistoryAction} className="mt-4">
+            <button className="product-button-secondary px-4">Delete all chat history</button>
+          </form>
+        </section>
+      </section>
     </>
   );
 }

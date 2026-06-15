@@ -262,7 +262,7 @@ export function ChatWorkspace({
     const requestMode: ChatMode = byok ? "byok" : mode;
     if (requestMode === "byok" && !byok) {
       setMessage(content);
-      setError("Add an OpenAI or OpenRouter key in AI settings first.");
+      setError("Add an OpenAI or OpenRouter key in Settings first.");
       return;
     }
     setPending(true);
@@ -393,9 +393,9 @@ export function ChatWorkspace({
             </Button>
             <Button asChild variant="secondary" size="icon">
               <Link
-                href="/dashboard/settings/ai"
-                aria-label="Open AI settings"
-                title="AI settings"
+                href="/dashboard/settings#ai-and-data"
+                aria-label="Open AI and data settings"
+                title="AI and data settings"
               >
                 <Settings2 aria-hidden="true" className="size-4" />
               </Link>
@@ -1083,9 +1083,9 @@ function ChatComposer({
           </div>
           <Button asChild variant="ghost" size="icon-sm">
             <Link
-              href="/dashboard/settings/ai"
-              aria-label="Open AI settings"
-              title="AI settings"
+              href="/dashboard/settings#ai-and-data"
+              aria-label="Open AI and data settings"
+              title="AI and data settings"
               className="hidden sm:inline-flex"
             >
               <Settings2 aria-hidden="true" className="size-4" />

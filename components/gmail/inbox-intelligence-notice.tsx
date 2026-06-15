@@ -35,7 +35,7 @@ export function InboxIntelligenceNotice({
       <SparklesIcon aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
       <p className="min-w-0 flex-1 leading-5">
         {byok ? `${byok.provider === "openai" ? "OpenAI" : "OpenRouter"} BYOK organizes this inbox.` : "Free model organizes this inbox."}{" "}
-        <Link href="/dashboard/settings/ai" className="font-semibold underline underline-offset-2">
+        <Link href="/dashboard/settings#ai-and-data" className="font-semibold underline underline-offset-2">
           {byok ? "Manage AI key" : "Add BYOK for better accuracy"}
         </Link>
         .
