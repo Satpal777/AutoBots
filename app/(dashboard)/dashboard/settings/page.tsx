@@ -3,6 +3,7 @@ import Link from "next/link";
 import { IntegrationActionButton } from "@/components/integrations/integration-action-button";
 import { PageHeader } from "@/components/dashboard/workspace-panels";
 import { LocalByokSettings } from "@/components/settings/local-byok-settings";
+import { DeleteAccountButton } from "@/components/settings/delete-account-button";
 import {
   AlertIcon,
   CalendarIcon,
@@ -23,6 +24,7 @@ import {
   connectGoogleIntegrationAction,
   disconnectGoogleIntegrationAction,
 } from "../actions";
+import { deleteAccountAction } from "./actions";
 import { deleteChatHistoryAction } from "./ai/actions";
 
 type SettingsPageProps = {
@@ -118,6 +120,27 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           <form action={deleteChatHistoryAction} className="mt-4">
             <button className="product-button-secondary px-4">Delete all chat history</button>
           </form>
+        </section>
+
+        <section className="product-danger-panel mt-5 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-danger-soft text-danger">
+                <AlertIcon aria-hidden="true" className="size-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-semibold text-ink">
+                  Delete account and data
+                </h3>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+                  Permanently remove your account, sessions, Gmail and Calendar credentials, cached emails and events, AI summaries, approvals, chat history, and usage records.
+                </p>
+              </div>
+            </div>
+            <form action={deleteAccountAction} className="shrink-0">
+              <DeleteAccountButton />
+            </form>
+          </div>
         </section>
       </section>
     </>
