@@ -8,6 +8,7 @@ import {
   AlertIcon,
   CalendarIcon,
   CheckIcon,
+  CloseIcon,
   MailIcon,
   ShieldIcon,
 } from "@/components/ui/icons";
@@ -122,21 +123,60 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </form>
         </section>
 
-        <section className="product-danger-panel mt-5 p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <section className="product-danger-panel mt-5 overflow-hidden">
+          <div className="flex flex-col gap-4 border-b border-danger/20 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
             <div className="flex min-w-0 gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-danger-soft text-danger">
+              <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-danger-soft text-danger">
                 <AlertIcon aria-hidden="true" className="size-5" />
               </span>
-              <div>
-                <h3 className="text-base font-semibold text-ink">
-                  Delete account and data
-                </h3>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-semibold text-ink">
+                    Delete account and data
+                  </h3>
+                  <span className="rounded-full bg-danger-soft px-2 py-1 text-xs font-semibold text-danger">
+                    Permanent
+                  </span>
+                </div>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-                  Permanently remove your account, sessions, Gmail and Calendar credentials, cached emails and events, AI summaries, approvals, chat history, and usage records.
+                  Remove this Autobot account and all workspace data tied to it. This action cannot be undone.
                 </p>
               </div>
             </div>
+          </div>
+
+          <div className="grid gap-5 px-5 py-5 lg:grid-cols-[minmax(0,1fr)_18rem] sm:px-6">
+            <div>
+              <p className="text-sm font-semibold text-ink">This removes</p>
+              <ul className="mt-3 grid gap-2 text-sm text-muted sm:grid-cols-2">
+                {[
+                  "Gmail and Calendar credentials",
+                  "Cached emails and calendar events",
+                  "AI summaries and inbox labels",
+                  "Approvals and action history",
+                  "Chat history and usage records",
+                  "Active sessions and login account",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2 leading-5">
+                    <CloseIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-danger" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="border-t border-danger/20 pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+              <p className="text-sm font-semibold text-ink">Before deleting</p>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                Disconnecting only removes app access. Deleting the account removes stored Autobot records and signs you out immediately.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-danger/20 bg-danger-soft/45 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p className="text-sm font-medium text-danger">
+              Use this only when you want to leave Autobot completely.
+            </p>
             <form action={deleteAccountAction} className="shrink-0">
               <DeleteAccountButton />
             </form>

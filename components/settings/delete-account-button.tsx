@@ -2,7 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 
-import { AlertIcon } from "@/components/ui/icons";
+import { TrashIcon } from "@/components/ui/icons";
 
 export function DeleteAccountButton() {
   const { pending } = useFormStatus();
@@ -24,7 +24,7 @@ export function DeleteAccountButton() {
       disabled={pending}
       className="product-button-danger inline-flex items-center justify-center gap-2 px-4 disabled:cursor-wait disabled:opacity-60"
     >
-      <AlertIcon aria-hidden="true" className="size-4" />
+      <TrashIcon aria-hidden="true" className="size-4" />
       {pending ? "Deleting account..." : "Delete account and data"}
     </button>
   );

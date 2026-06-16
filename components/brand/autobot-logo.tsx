@@ -22,41 +22,45 @@ export function AutobotLogo({
 }
 
 export function AutobotMark({ inverse = false }: { inverse?: boolean }) {
+  const bodyFill = inverse ? "white" : "currentColor";
+  const faceFill = inverse ? "var(--forest-solid)" : "var(--ink)";
+  const chinStroke = inverse ? "white" : "currentColor";
+
   return (
     <svg
       aria-hidden="true"
-      viewBox="0 0 40 40"
+      viewBox="0 0 48 48"
       className="size-9 shrink-0"
       fill="none"
     >
       <rect
-        x="2"
-        y="4"
-        width="36"
-        height="32"
-        rx="11"
-        fill={inverse ? "white" : "currentColor"}
+        x="8"
+        y="11"
+        width="32"
+        height="30"
+        rx="10"
+        fill={bodyFill}
       />
       <path
-        d="M20 4V1.75M17.75 1.75h4.5"
-        stroke={inverse ? "white" : "currentColor"}
-        strokeWidth="2"
+        d="M24 11V7.5M21.5 7.5h5"
+        stroke={bodyFill}
+        strokeWidth="2.4"
         strokeLinecap="round"
       />
       <rect
-        x="8"
-        y="11"
-        width="24"
-        height="17"
-        rx="7.5"
-        fill={inverse ? "var(--forest)" : "var(--gold-soft)"}
+        x="14"
+        y="19"
+        width="20"
+        height="13"
+        rx="6.5"
+        fill={faceFill}
       />
-      <circle cx="15.5" cy="19.5" r="2.25" fill="var(--gold)" />
-      <circle cx="24.5" cy="19.5" r="2.25" fill="var(--gold)" />
+      <circle cx="20" cy="25.5" r="2" fill="var(--gold)" />
+      <circle cx="28" cy="25.5" r="2" fill="var(--gold)" />
       <path
-        d="M15 31.5h10"
-        stroke={inverse ? "var(--forest)" : "var(--gold-soft)"}
-        strokeWidth="2"
+        d="M19 36h10"
+        stroke={chinStroke}
+        strokeWidth="2.4"
         strokeLinecap="round"
       />
     </svg>

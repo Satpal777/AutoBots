@@ -27,5 +27,6 @@ export {
   Settings as SettingsIcon,
   Sparkles as SparklesIcon,
   Sun as SunIcon,
+  Trash2 as TrashIcon,
   Users as UsersIcon,
 } from "lucide-react";
