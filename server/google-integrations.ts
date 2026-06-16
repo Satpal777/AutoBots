@@ -86,16 +86,22 @@ export async function disconnectGoogleIntegration(
   const keys =
     plugin === "gmail" ? tenant.gmail.keys : tenant.googlecalendar.keys;
 
-  await Promise.all([
-    Promise.all([
-      keys.set_access_token(null),
-      keys.set_refresh_token(null),
-      keys.set_expires_at(null),
-      keys.set_scope(null),
-      keys.set_webhook_signature(null),
-    ]),
-    clearIntegrationCache(tenantId, plugin),
-  ]);
+  await clearGoogleIntegrationCredentials(keys);
+  await clearIntegrationCache(tenantId, plugin);
+}
+
+async function clearGoogleIntegrationCredentials(keys: {
+  set_access_token: (value: string | null) => Promise<void>;
+  set_refresh_token: (value: string | null) => Promise<void>;
+  set_expires_at: (value: string | null) => Promise<void>;
+  set_scope: (value: string | null) => Promise<void>;
+  set_webhook_signature: (value: string | null) => Promise<void>;
+}): Promise<void> {
+  await keys.set_access_token(null);
+  await keys.set_refresh_token(null);
+  await keys.set_expires_at(null);
+  await keys.set_scope(null);
+  await keys.set_webhook_signature(null);
 }
 
 async function getConnectionStatus(

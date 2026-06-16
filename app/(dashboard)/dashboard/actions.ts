@@ -48,6 +48,7 @@ export async function disconnectGoogleIntegrationAction(formData: FormData) {
   try {
     await disconnectGoogleIntegration(result.data.plugin);
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/settings");
   } catch {
     status = "error";
   }
